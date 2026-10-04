@@ -1,82 +1,100 @@
-# Reparto de tareas — PetCare: Home → Mis Mascotas → Detalle → Registrar Cuidado (MVVM + Room + Repositorio + DI, sin NavHost/NavController)
+# Reparto de tareas — PetCare: Home → Mis Mascotas → Detalle → Registrar Cuidado (MVVM + Room + Hilt + Navigation Compose)
 
 ## Contexto
 
-El repo `PetCare` es, hoy, el proyecto Android por defecto generado por Android Studio: solo existe `MainActivity.kt` y el tema de Compose (`ui/theme/`). No hay pantallas, no hay Room, no hay Navigation Compose, no hay ViewModels — nada específico de PetCare todavía. El diseño (wireframes, requisitos funcionales, fichas de persona) ya está definido en el documento de la Etapa 1 (Trabajo Grupal 1).
+Esta versión del plan incorpora las observaciones de una clase posterior del profesor (notas/transcripción) que **revierten dos restricciones anteriores** de este mismo plan, y agregan una corrección de arquitectura que no estaba cubierta:
 
-Esta versión del plan es una auditoría + corrección de la anterior: se revisó contra **los dos documentos del profesor** (Etapa 1 y Etapa 2) y contra **todo lo que se ha pedido en el chat**, y se cerraron los vacíos encontrados. Sigue **sin NavHost/NavController** (restringido). Lo nuevo respecto a la versión anterior:
+1. **Se levanta la restricción de NavHost/NavController.** El profesor explica que ya no debe haber variables de navegación "quemadas" dentro de la UI (`remember { mutableStateOf(Pantalla.HOME) }` como lo teníamos en `PetCareApp.kt`), y que las rutas deben modelarse con `Enum` o clases selladas. La forma correcta de resolver esto es adoptar **Navigation Compose de verdad**, con rutas tipadas (`@Serializable sealed interface`), en vez de seguir con el `when` manual. Esto además resuelve solo, de forma gratuita, el problema de que el botón físico de "atrás" no funcionaba entre pantallas (que antes estaba documentado como "fuera de alcance").
+2. **Se cambia de `AppContainer` manual a Hilt.** El profesor menciona explícitamente evitar el `lateinit var` de la inyección manual, y recomienda `@HiltViewModel` + `@Inject`. Se adopta Hilt para toda la inyección de dependencias (ViewModels, repositorios, base de datos).
+3. **Nomenclatura "offline/local" para los repositorios.** `MascotaRepositoryImpl` → `OfflineMascotaRepository`, `CuidadoRepositoryImpl` → `OfflineCuidadoRepository`, para que el nombre deje claro que la fuente de datos es el almacenamiento local del dispositivo.
 
-1. **Segunda tabla maestra + tabla transaccional** (el vacío más importante — el documento de la Etapa 1 pide "mínimo 2 tablas maestras y 1 tabla transaccional", y antes solo teníamos `Mascota`).
-2. **CRUD completo de Cuidado** (RF05–RF09 del documento de la Etapa 1: registrar, consultar, editar, eliminar cuidados, y elegir el tipo).
-3. **Eventos puntuales con `Channel`/`Flow`** (lo pedía el documento de la Etapa 2 y antes no aplicaba porque no había ninguna escritura; ahora que hay un formulario de Cuidado, sí aplica).
-4. **Material Design 3 explícito** en cada pantalla (antes quedaba implícito).
-5. **Extras opcionales listados** (Ícono adaptativo, WindowSizeClass) para que quede claro que existen pero no son obligatorios.
-6. **Recordatorio de la presentación de cierre** (elevator pitch de 5 minutos).
+Estos dos cambios (Hilt + NavHost) en realidad **simplifican bastante el código del contenedor** (`PetCareApp.kt`), porque Hilt elimina toda la plomería manual de `viewModelFactory`/`AppContainer`, y Navigation Compose elimina las variables `mascotaIdSeleccionada`/`cuidadoIdSeleccionado` que antes vivían sueltas en el composable — ahora esos datos viajan como argumentos tipados de la ruta.
 
-### Supuestos que hice para cerrar estos vacíos (avísame si alguno no es lo que quieres)
+Lo demás del plan (3 pantallas + 1 contenedor, Room con 3 entidades — 2 maestras + 1 transaccional —, patrón Repositorio, MVVM con `StateFlow<UiState>` sellado, separación `Route`/`Screen`, eventos puntuales con `Channel`, Material 3) se mantiene igual que antes.
 
-- **Interpretación de "2 tablas maestras + 1 transaccional"**: `Mascota` (maestra, ya existía) + `TipoCuidado` (maestra, nueva — catálogo fijo: Vacunación, Baño, Desparasitación, Visita veterinaria) + `Cuidado` (transaccional, nueva — un registro por cada vez que se hizo un cuidado, con fecha y notas, ligado a una mascota y a un tipo).
-- **`Mascota` sigue siendo de solo lectura** (no se agregan pantallas de registrar/editar/eliminar mascota en esta entrega — sigue precargada con Rocky). El CRUD completo que sí se agrega es sobre `Cuidado`, porque es lo que pide explícitamente el documento de la Etapa 1 (RF05–RF08) y es lo mínimo para tener una tabla transaccional real.
-- **Una sola pantalla nueva** (`RegistrarCuidadoScreen`) sirve para **crear y editar** un cuidado (según si le llega un id o no), y desde ahí mismo se puede eliminar. Así no se agregan 3-4 pantallas nuevas, solo 1.
-- La cadena de navegación crece un nivel más: **Home → Mascotas → Detalle → Registrar/Editar Cuidado**. Sigue siendo una cadena lineal (no un grafo), así que entendemos que sigue dentro de la restricción del profesor de "padre → hijo" aplicada varias veces, pero avísame si tu profesor la quiere más corta.
+### Supuestos (avísame si alguno no es lo que quieres)
+
+- Se usa el sistema de **rutas tipadas con `kotlinx.serialization`** (`@Serializable` sobre una `sealed interface`), que es el estándar actual de Navigation Compose, en vez de rutas como `String` a mano.
+- Hilt se usa para **ViewModels, Base de datos y Repositorios**. El resto del equipo sigue sin tocar Hilt directamente salvo por las anotaciones (`@HiltViewModel`, `@Inject constructor`) en sus propios archivos — la configuración "pesada" (módulos, Application class) la arma quien lidera el Paso 0.
+- Se mantiene la interpretación de "2 tablas maestras + 1 transaccional" ya acordada: `Mascota` + `TipoCuidado` (maestras) + `Cuidado` (transaccional), y `Mascota` sigue siendo de solo lectura (precargada con Rocky).
 
 ## Cómo esto encaja con la rúbrica de la Etapa 2 (actualizado)
 
 | Criterio de la rúbrica | ¿Se cubre en esta entrega? |
 |---|---|
-| 1. Capa de UI & State Hoisting (Compose, Material 3) | Sí — `Route` (stateful) / `Screen` (stateless), sin pasar ViewModel a hijos, `collectAsStateWithLifecycle()`, componentes Material 3 explícitos (ver Paso 1). |
-| 2. Arquitectura MVVM & Gestión de Estado Reactivo | Sí — un ViewModel por pantalla, `StateFlow<UiState>` sellado, y ahora también **eventos puntuales con `Channel`** en el formulario de Cuidado. |
-| 3. Capa de Datos (Room & Single Source of Truth) | Sí — 3 entidades (2 maestras + 1 transaccional), lecturas con `Flow<T>`, escrituras `suspend fun`, CRUD completo sobre `Cuidado`. |
-| 4. Patrón Repositorio y Desacoplamiento | Sí — `MascotaRepository` + `CuidadoRepository`, cada uno con su interfaz + implementación. |
-| 5. Navegación e Inyección de Dependencias (DI) | Solo la mitad: la DI (`AppContainer` + fábricas) sí se cubre. La navegación con `NavHost`/`NavController` sigue pendiente para cuando el profesor la habilite. |
-| Extra: Ícono adaptativo / WindowSizeClass / UseCases | No incluidos — son opcionales, ver "Fuera de alcance". |
+| 1. Capa de UI & State Hoisting (Compose, Material 3) | Sí — `Route` (stateful, obtiene su ViewModel con `hiltViewModel()`) / `Screen` (stateless), sin pasar ViewModel a hijos, `collectAsStateWithLifecycle()`. |
+| 2. Arquitectura MVVM & Gestión de Estado Reactivo | Sí — ViewModel por pantalla, `StateFlow<UiState>` sellado, eventos puntuales con `Channel`. |
+| 3. Capa de Datos (Room & Single Source of Truth) | Sí — 3 entidades (2 maestras + 1 transaccional), lecturas `Flow<T>`, escrituras `suspend fun`, CRUD completo sobre `Cuidado`. |
+| 4. Patrón Repositorio y Desacoplamiento | Sí — interfaces + `Offline*Repository`, nomenclatura que refleja la fuente local. |
+| 5. Navegación e Inyección de Dependencias (DI) | **Ahora sí, completo**: Navigation Compose con rutas tipadas + Hilt para toda la inyección. |
 
 ## Estructura de paquetes a crear
 
 ```
 app/src/main/java/com/am/septimob/petcare/
+├── PetCareApplication.kt              (NUEVO — @HiltAndroidApp)
+├── PetCareRoute.kt                    (reemplaza Pantalla.kt — rutas tipadas con @Serializable)
+├── PetCareApp.kt                      (Persona D — ahora solo arma el NavHost, sin estado propio)
 ├── data/
 │   ├── Mascota.kt                     (@Entity — tabla maestra 1)
-│   ├── TipoCuidado.kt                 (@Entity — tabla maestra 2, catálogo fijo)
-│   ├── Cuidado.kt                     (@Entity — tabla transaccional, FK a Mascota y TipoCuidado)
+│   ├── TipoCuidado.kt                 (@Entity — tabla maestra 2)
+│   ├── Cuidado.kt                     (@Entity — tabla transaccional)
 │   ├── MascotaDao.kt
 │   ├── TipoCuidadoDao.kt
-│   ├── CuidadoDao.kt                  (incluye insertar/actualizar/eliminar = CRUD completo)
-│   ├── PetCareDatabase.kt             (@Database con las 3 entidades + precarga inicial)
-│   ├── MascotaRepository.kt + MascotaRepositoryImpl.kt
-│   └── CuidadoRepository.kt + CuidadoRepositoryImpl.kt   (maneja Cuidado y TipoCuidado)
-├── AppContainer.kt                    (ahora expone mascotaRepository y cuidadoRepository)
-├── Pantalla.kt                        (enum: HOME, MASCOTAS, DETALLE, REGISTRAR_CUIDADO)
-├── PetCareApp.kt                      (Persona D — contenedor visual, arma los ViewModels vía factory)
-├── HomeScreen.kt + HomeViewModel.kt                          (Persona A)
-├── MascotasScreen.kt + MascotasViewModel.kt                  (Persona B)
-├── DetalleMascotaScreen.kt + DetalleMascotaViewModel.kt      (Persona C — ahora incluye la lista de cuidados de la mascota)
-└── RegistrarCuidadoScreen.kt + RegistrarCuidadoViewModel.kt  (Persona C — nueva, crear/editar/eliminar cuidado)
+│   ├── CuidadoDao.kt                  (CRUD completo)
+│   ├── PetCareDatabase.kt             (@Database, sin el singleton manual — lo maneja Hilt)
+│   ├── MascotaRepository.kt + OfflineMascotaRepository.kt   (renombrado, @Inject constructor)
+│   └── CuidadoRepository.kt + OfflineCuidadoRepository.kt   (renombrado, @Inject constructor)
+├── di/
+│   ├── DatabaseModule.kt              (NUEVO — @Module, provee Database + Daos)
+│   └── RepositoryModule.kt            (NUEVO — @Module @Binds, liga interfaces a Offline*Repository)
+├── HomeScreen.kt + HomeViewModel.kt                          (Persona A — @HiltViewModel)
+├── MascotasScreen.kt + MascotasViewModel.kt                  (Persona B — @HiltViewModel)
+├── DetalleMascotaScreen.kt + DetalleMascotaViewModel.kt      (Persona C — @HiltViewModel + SavedStateHandle)
+└── RegistrarCuidadoScreen.kt + RegistrarCuidadoViewModel.kt  (Persona C — @HiltViewModel + SavedStateHandle)
 ```
 
-Nota sobre el estilo de código: seguimos con **paquete plano** (nada de `ui/screens/...`) y `@Preview` por pantalla, que es lo que se veía en los codelabs de Afirmaciones/Woof/Tip Calculator que el equipo ya conoce — pero hay que ser honestos: **Room, ViewModel, Repositorio y Channel son contenido nuevo que esos codelabs no cubren en absoluto** (son apps de una sola pantalla sin base de datos). Lo único que se mantiene "al estilo de esas clases" es la organización de archivos y la forma de los composables, no la arquitectura de datos, que es enteramente nueva y viene del documento de la Etapa 2.
+`AppContainer.kt` **se elimina** (ya no hace falta, Hilt reemplaza toda esa función).
 
 ## Paso 0 — Base compartida (sesión conjunta del equipo)
 
-**Corrección sobre el reparto que había planteado antes:** dije que cada sub-hilo podía hacer "su entidad + su Dao + su Repositorio" de punta a punta, pero eso no es cierto una vez que se mira la dependencia real: `Cuidado` tiene una llave foránea hacia `Mascota` y hacia `TipoCuidado`, y la interfaz `CuidadoRepository` usa los tipos `Cuidado` y `TipoCuidado` en su firma. Es decir, **las 3 entidades + las 2 interfaces de Repositorio están enlazadas entre sí** y tienen que salir como un solo bloque compartido, rápido, antes de repartir nada. Lo que sí se puede paralelizar de verdad es la parte de *implementación* (Dao + RepositoryImpl) de cada familia, una vez que ese bloque ya existe.
+### 0.1 — Dependencias en Gradle (creció: ahora incluye Hilt y Navigation Compose)
 
-Por eso el orden queda así:
+En el **`build.gradle.kts` raíz**, agregar los plugins (con `apply false`, igual que los que ya existen):
+- `com.google.devtools.ksp` (KSP, para Room y para el compilador de Hilt).
+- `org.jetbrains.kotlin.plugin.serialization` (para las rutas tipadas con `kotlinx.serialization`).
+- `com.google.dagger.hilt.android` (Hilt).
 
-### 0.1 — Dependencias en Gradle (sin depender de nada, se puede hacer en paralelo con todo lo demás)
+En **`gradle/libs.versions.toml`**, agregar en `[versions]`, `[plugins]` y `[libraries]` las entradas para:
+- Room: `room-runtime`, `room-ktx`, `room-compiler` (este último se agrega con `ksp(...)`).
+- `androidx.navigation:navigation-compose`.
+- `org.jetbrains.kotlinx:kotlinx-serialization-json`.
+- `androidx.lifecycle:lifecycle-viewmodel-compose` (trae `collectAsStateWithLifecycle()` y `hiltViewModel()` en conjunto con la siguiente).
+- Hilt: `com.google.dagger:hilt-android`, `com.google.dagger:hilt-android-compiler` (con `ksp(...)` — las versiones recientes de Hilt ya soportan KSP, no hace falta `kapt`).
+- `androidx.hilt:hilt-navigation-compose` (trae la función `hiltViewModel()` para usar dentro de un `NavHost`).
 
-- Plugin **KSP** (`com.google.devtools.ksp`).
-- `androidx.room:room-runtime`, `androidx.room:room-ktx`, `androidx.room:room-compiler` (con `ksp(...)`).
-- `androidx.lifecycle:lifecycle-viewmodel-compose`.
+En **`app/build.gradle.kts`**, aplicar los 3 plugins nuevos (sin `apply false`) y agregar las dependencias de arriba en el bloque `dependencies { }`.
 
-Usar la versión estable más reciente compatible con Kotlin `2.2.10` / Compose BOM `2026.02.01` — revisar en Android Studio, no copiar un número a ciegas.
+Usar siempre la versión estable más reciente compatible con Kotlin `2.2.10` / Compose BOM `2026.02.01` — revisar en Android Studio, no copiar números a ciegas.
 
-### 0.2 — `Pantalla.kt` (tampoco depende de nada — antes quedaba metido sin razón entre los pasos de datos)
+### 0.2 — `PetCareRoute.kt` (reemplaza a `Pantalla.kt`; no depende de nada)
 
 ```kotlin
-enum class Pantalla { HOME, MASCOTAS, DETALLE, REGISTRAR_CUIDADO }
+package com.am.septimob.petcare
+
+import kotlinx.serialization.Serializable
+
+sealed interface PetCareRoute {
+    @Serializable data object Home : PetCareRoute
+    @Serializable data object Mascotas : PetCareRoute
+    @Serializable data class Detalle(val mascotaId: Int) : PetCareRoute
+    @Serializable data class RegistrarCuidado(val mascotaId: Int, val cuidadoId: Int? = null) : PetCareRoute
+}
 ```
 
-### 0.3 — Contrato de datos (bloqueante: esto es lo primero que hay que subir, porque todo lo demás depende de esto)
+Cada ruta lleva sus propios argumentos tipados (`mascotaId`, `cuidadoId`) en vez de variables sueltas en el contenedor como antes.
+
+### 0.3 — Contrato de datos (bloqueante: esto es lo primero que hay que subir)
 
 ```kotlin
 // data/Mascota.kt
@@ -129,7 +147,7 @@ interface MascotaRepository {
 ```
 
 ```kotlin
-// data/CuidadoRepository.kt — usa Cuidado y TipoCuidado en su firma, por eso va después de 0.3
+// data/CuidadoRepository.kt — usa Cuidado y TipoCuidado en su firma, por eso va después
 data class CuidadoConTipo(
     val id: Int,
     val fecha: String,
@@ -147,9 +165,9 @@ interface CuidadoRepository {
 }
 ```
 
-En cuanto existe este bloque completo (3 entidades + 2 interfaces), **las personas A, B y C ya pueden escribir sus ViewModels** sin esperar a que Room esté implementado de verdad, y **los 2 sub-hilos de abajo ya pueden arrancar en paralelo**.
+En cuanto existe este bloque, **las personas A, B y C ya pueden escribir sus ViewModels**, y los 2 sub-hilos de abajo pueden arrancar en paralelo.
 
-### 0.4 — Sub-hilo 1: implementación de Mascota (independiente del sub-hilo 2)
+### 0.4 — Sub-hilo 1: implementación de Mascota
 
 ```kotlin
 // data/MascotaDao.kt
@@ -167,14 +185,16 @@ interface MascotaDao {
 ```
 
 ```kotlin
-// data/MascotaRepositoryImpl.kt
-class MascotaRepositoryImpl(private val dao: MascotaDao) : MascotaRepository {
+// data/OfflineMascotaRepository.kt — @Inject constructor en vez de instanciarlo a mano
+class OfflineMascotaRepository @Inject constructor(
+    private val dao: MascotaDao
+) : MascotaRepository {
     override fun obtenerMascotas(): Flow<List<Mascota>> = dao.obtenerTodas()
     override fun obtenerMascotaPorId(id: Int): Flow<Mascota?> = dao.obtenerPorId(id)
 }
 ```
 
-### 0.5 — Sub-hilo 2: implementación de TipoCuidado + Cuidado (independiente del sub-hilo 1)
+### 0.5 — Sub-hilo 2: implementación de TipoCuidado + Cuidado
 
 ```kotlin
 // data/TipoCuidadoDao.kt
@@ -217,8 +237,8 @@ interface CuidadoDao {
 ```
 
 ```kotlin
-// data/CuidadoRepositoryImpl.kt
-class CuidadoRepositoryImpl(
+// data/OfflineCuidadoRepository.kt
+class OfflineCuidadoRepository @Inject constructor(
     private val cuidadoDao: CuidadoDao,
     private val tipoCuidadoDao: TipoCuidadoDao
 ) : CuidadoRepository {
@@ -231,75 +251,162 @@ class CuidadoRepositoryImpl(
 }
 ```
 
-### 0.6 — Unión de los 2 sub-hilos (la hace quien lidera Persona D, una vez que 0.4 y 0.5 están listos)
+### 0.6 — Unión: módulos de Hilt + Application (la hace quien lidera Persona D)
+
+A diferencia de la versión anterior (con `AppContainer` + un singleton manual con `@Volatile`/`synchronized`), ahora **Hilt maneja el ciclo de vida de los singletons** — no hace falta escribir ese patrón a mano.
 
 ```kotlin
-// data/PetCareDatabase.kt — junta las 3 entidades y los 3 Dao de ambos sub-hilos
+// data/PetCareDatabase.kt — ya no tiene companion object ni lógica de singleton
 @Database(entities = [Mascota::class, TipoCuidado::class, Cuidado::class], version = 1, exportSchema = false)
 abstract class PetCareDatabase : RoomDatabase() {
     abstract fun mascotaDao(): MascotaDao
     abstract fun tipoCuidadoDao(): TipoCuidadoDao
     abstract fun cuidadoDao(): CuidadoDao
-
-    companion object {
-        @Volatile private var INSTANCE: PetCareDatabase? = null
-
-        fun getInstance(context: Context): PetCareDatabase =
-            INSTANCE ?: synchronized(this) {
-                Room.databaseBuilder(context, PetCareDatabase::class.java, "petcare.db")
-                    .addCallback(object : RoomDatabase.Callback() {
-                        override fun onCreate(db: SupportSQLiteDatabase) {
-                            super.onCreate(db)
-                            // Precarga: sin pantallas de "Registrar mascota"/"Registrar tipo" todavía,
-                            // así que se siembra Rocky y el catálogo fijo de tipos de cuidado.
-                            CoroutineScope(Dispatchers.IO).launch {
-                                val instancia = getInstance(context)
-                                instancia.mascotaDao().insertar(
-                                    Mascota(nombre = "Rocky", especie = "Perro", raza = "Mestizo",
-                                        fechaNacimiento = "12/03/2021", sexo = "Macho", pesoKg = 18.5)
-                                )
-                                listOf("Vacunación", "Baño", "Desparasitación", "Visita veterinaria").forEach {
-                                    instancia.tipoCuidadoDao().insertar(TipoCuidado(nombre = it))
-                                }
-                            }
-                        }
-                    })
-                    .build()
-                    .also { INSTANCE = it }
-            }
-    }
 }
 ```
 
 ```kotlin
-// AppContainer.kt — junta los 2 RepositoryImpl de ambos sub-hilos
-class AppContainer(context: Context) {
-    private val database = PetCareDatabase.getInstance(context)
-    val mascotaRepository: MascotaRepository = MascotaRepositoryImpl(database.mascotaDao())
-    val cuidadoRepository: CuidadoRepository =
-        CuidadoRepositoryImpl(database.cuidadoDao(), database.tipoCuidadoDao())
+// di/DatabaseModule.kt
+@Module
+@InstallIn(SingletonComponent::class)
+object DatabaseModule {
+
+    @Provides
+    @Singleton
+    fun providePetCareDatabase(
+        @ApplicationContext context: Context,
+        mascotaDaoProvider: Provider<MascotaDao>,
+        tipoCuidadoDaoProvider: Provider<TipoCuidadoDao>
+    ): PetCareDatabase =
+        Room.databaseBuilder(context, PetCareDatabase::class.java, "petcare.db")
+            .addCallback(object : RoomDatabase.Callback() {
+                override fun onCreate(db: SupportSQLiteDatabase) {
+                    super.onCreate(db)
+                    // Precarga: Rocky + el catálogo fijo de tipos de cuidado.
+                    // Se usan Provider<T> porque el Dao depende de la Database que se
+                    // está construyendo aquí mismo — Hilt resuelve esta referencia perezosa.
+                    CoroutineScope(Dispatchers.IO).launch {
+                        mascotaDaoProvider.get().insertar(
+                            Mascota(nombre = "Rocky", especie = "Perro", raza = "Mestizo",
+                                fechaNacimiento = "12/03/2021", sexo = "Macho", pesoKg = 18.5)
+                        )
+                        listOf("Vacunación", "Baño", "Desparasitación", "Visita veterinaria").forEach {
+                            tipoCuidadoDaoProvider.get().insertar(TipoCuidado(nombre = it))
+                        }
+                    }
+                }
+            })
+            .build()
+
+    @Provides fun provideMascotaDao(db: PetCareDatabase): MascotaDao = db.mascotaDao()
+    @Provides fun provideTipoCuidadoDao(db: PetCareDatabase): TipoCuidadoDao = db.tipoCuidadoDao()
+    @Provides fun provideCuidadoDao(db: PetCareDatabase): CuidadoDao = db.cuidadoDao()
 }
 ```
 
-`MainActivity.kt` sigue igual que en la versión anterior: crea `AppContainer` una vez y se lo pasa a `PetCareApp`.
+```kotlin
+// di/RepositoryModule.kt
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class RepositoryModule {
 
-## Paso 1 — Trabajo en paralelo (una persona por pantalla; Persona C ahora tiene 2 pantallas)
+    @Binds
+    @Singleton
+    abstract fun bindMascotaRepository(impl: OfflineMascotaRepository): MascotaRepository
 
-Regla estricta: el composable `XRoute` es el único que conoce el ViewModel. El composable `XScreen` solo recibe el `UiState` + lambdas. **Usar componentes Material 3** en todas las pantallas: `Scaffold` + `TopAppBar`, `Card`, `Button`/`FilledTonalButton`, `OutlinedTextField`, `CircularProgressIndicator` para `Loading`, y colores desde `MaterialTheme.colorScheme` (no colores sueltos hardcodeados).
+    @Binds
+    @Singleton
+    abstract fun bindCuidadoRepository(impl: OfflineCuidadoRepository): CuidadoRepository
+}
+```
 
-### Persona A — `HomeScreen.kt` + `HomeViewModel.kt` (sin cambios respecto a la versión anterior)
+```kotlin
+// PetCareApplication.kt
+@HiltAndroidApp
+class PetCareApplication : Application()
+```
 
-`HomeUiState` (`Loading`/`Success(cantidadMascotas)`/`Error`), `HomeRoute` colecta el `StateFlow`, `HomeScreen` dibuja con `Scaffold`/`TopAppBar`/`Card`. Wireframe "Pantalla 2 — Home".
+Y en `AndroidManifest.xml`, en la etiqueta `<application>`, agregar `android:name=".PetCareApplication"`.
 
-### Persona B — `MascotasScreen.kt` + `MascotasViewModel.kt` (sin cambios respecto a la versión anterior)
+```kotlin
+// MainActivity.kt
+@AndroidEntryPoint
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContent {
+            PetCareTheme {
+                PetCareApp()
+            }
+        }
+    }
+}
+```
+Nótese que `MainActivity` ya **no crea nada a mano** (ni `AppContainer` ni base de datos) — todo lo resuelve Hilt automáticamente gracias a `@AndroidEntryPoint` + `@HiltAndroidApp`.
 
-`MascotasUiState` (`Loading`/`Success(mascotas)`/`Error`), `LazyColumn` de `Card` por mascota. Wireframe "Pantalla 3 — Mis mascotas".
+## Paso 1 — Trabajo en paralelo (una persona por pantalla; Persona C tiene 2 pantallas)
 
-### Persona C — `DetalleMascotaScreen.kt` + `DetalleMascotaViewModel.kt` (ampliada) + `RegistrarCuidadoScreen.kt` + `RegistrarCuidadoViewModel.kt` (nueva)
+Regla estricta: el composable `XRoute` es el único que conoce el ViewModel (lo obtiene con `hiltViewModel()` como valor por defecto de un parámetro, no recibido desde el contenedor). El composable `XScreen` solo recibe el `UiState` + lambdas. **Usar componentes Material 3** en todas las pantallas (`Scaffold`, `TopAppBar`, `Card`, `OutlinedTextField`, `CircularProgressIndicator`, colores de `MaterialTheme.colorScheme`).
 
-Esta persona tiene ahora el trabajo más grande de las 3 pantallas — si Persona A o B terminan antes, pueden ayudar aquí.
+### Persona A — `HomeScreen.kt` + `HomeViewModel.kt`
 
-**`DetalleMascotaViewModel`** ahora combina dos flujos (datos de la mascota + su lista de cuidados):
+```kotlin
+// HomeViewModel.kt
+sealed interface HomeUiState {
+    data object Loading : HomeUiState
+    data class Success(val cantidadMascotas: Int) : HomeUiState
+    data class Error(val mensaje: String) : HomeUiState
+}
+
+@HiltViewModel
+class HomeViewModel @Inject constructor(
+    repository: MascotaRepository
+) : ViewModel() {
+    val uiState: StateFlow<HomeUiState> = repository.obtenerMascotas()
+        .map { mascotas -> HomeUiState.Success(mascotas.size) as HomeUiState }
+        .catch { emit(HomeUiState.Error(it.message ?: "Error al cargar")) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState.Loading)
+}
+```
+
+```kotlin
+// HomeScreen.kt
+@Composable
+fun HomeRoute(
+    onVerMascotasClick: () -> Unit,
+    viewModel: HomeViewModel = hiltViewModel()
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    HomeScreen(uiState = uiState, onVerMascotasClick = onVerMascotasClick)
+}
+
+@Composable
+fun HomeScreen(uiState: HomeUiState, onVerMascotasClick: () -> Unit) {
+    when (uiState) {
+        is HomeUiState.Loading -> // indicador de carga
+        is HomeUiState.Success -> // resumen con uiState.cantidadMascotas + botón "Ver mis mascotas"
+        is HomeUiState.Error -> // mensaje de error
+    }
+}
+
+@Preview
+@Composable
+private fun HomeScreenPreview() {
+    HomeScreen(uiState = HomeUiState.Success(cantidadMascotas = 1), onVerMascotasClick = {})
+}
+```
+Wireframe "Pantalla 2 — Home".
+
+### Persona B — `MascotasScreen.kt` + `MascotasViewModel.kt`
+
+Mismo patrón que Home (`@HiltViewModel`, `MascotasRoute` con `hiltViewModel()` por defecto). `MascotasUiState` (`Loading`/`Success(mascotas)`/`Error`). Wireframe "Pantalla 3 — Mis mascotas".
+
+### Persona C — `DetalleMascotaScreen.kt` + `DetalleMascotaViewModel.kt` + `RegistrarCuidadoScreen.kt` + `RegistrarCuidadoViewModel.kt`
+
+Esta persona tiene el trabajo más grande — si Persona A o B terminan antes, pueden ayudar aquí.
+
+**Diferencia clave respecto a la versión anterior**: antes `mascotaId`/`cuidadoId` llegaban como parámetro de constructor armado a mano con `viewModelFactory`. Ahora llegan automáticamente vía `SavedStateHandle`, porque Navigation Compose mete los argumentos tipados de la ruta ahí solo:
+
 ```kotlin
 sealed interface DetalleUiState {
     data object Loading : DetalleUiState
@@ -307,15 +414,18 @@ sealed interface DetalleUiState {
     data class Error(val mensaje: String) : DetalleUiState
 }
 
-class DetalleMascotaViewModel(
-    mascotaId: Int,
+@HiltViewModel
+class DetalleMascotaViewModel @Inject constructor(
+    savedStateHandle: SavedStateHandle,
     mascotaRepository: MascotaRepository,
     cuidadoRepository: CuidadoRepository
 ) : ViewModel() {
+    private val ruta = savedStateHandle.toRoute<PetCareRoute.Detalle>()
+
     val uiState: StateFlow<DetalleUiState> =
         combine(
-            mascotaRepository.obtenerMascotaPorId(mascotaId),
-            cuidadoRepository.obtenerCuidadosDeMascota(mascotaId)
+            mascotaRepository.obtenerMascotaPorId(ruta.mascotaId),
+            cuidadoRepository.obtenerCuidadosDeMascota(ruta.mascotaId)
         ) { mascota, cuidados ->
             if (mascota != null) DetalleUiState.Success(mascota, cuidados)
             else DetalleUiState.Error("Mascota no encontrada")
@@ -324,9 +434,8 @@ class DetalleMascotaViewModel(
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DetalleUiState.Loading)
 }
 ```
-`DetalleMascotaScreen` dibuja los datos de la mascota (wireframe "Pantalla 5 — Detalle de mascota") **más** una lista de `cuidados` (estilo wireframe "Pantalla 6 — Historial de cuidados") y un botón "Registrar cuidado". Cada ítem de cuidado es clickeable → `onCuidadoClick(cuidadoId)` (para editar).
+`DetalleMascotaRoute(onRegistrarCuidadoClick, onCuidadoClick, onBackClick, viewModel: DetalleMascotaViewModel = hiltViewModel())` dibuja los datos de la mascota (wireframe "Pantalla 5") + la lista de cuidados (wireframe "Pantalla 6") + botón "Registrar cuidado".
 
-**`RegistrarCuidadoViewModel`** — sirve para crear (sin `cuidadoId`) o editar (con `cuidadoId`), y usa un `Channel` para los eventos puntuales que pide la Etapa 2:
 ```kotlin
 sealed interface RegistrarCuidadoUiState {
     data object Cargando : RegistrarCuidadoUiState
@@ -346,20 +455,22 @@ sealed interface RegistrarCuidadoEvento {
     data class Error(val mensaje: String) : RegistrarCuidadoEvento
 }
 
-class RegistrarCuidadoViewModel(
-    private val mascotaId: Int,
-    private val cuidadoId: Int?,
+@HiltViewModel
+class RegistrarCuidadoViewModel @Inject constructor(
+    savedStateHandle: SavedStateHandle,
     private val repository: CuidadoRepository
 ) : ViewModel() {
+    private val ruta = savedStateHandle.toRoute<PetCareRoute.RegistrarCuidado>()
+
     private val _eventos = Channel<RegistrarCuidadoEvento>()
     val eventos = _eventos.receiveAsFlow()
 
-    // uiState: carga tiposCuidado (y el cuidado existente si cuidadoId != null) y arma Formulario
+    // uiState: carga tiposCuidado (y el cuidado existente si ruta.cuidadoId != null) y arma Formulario
 
     fun guardar(tipoCuidadoId: Int, fecha: String, notas: String) {
         viewModelScope.launch {
             try {
-                repository.guardar(Cuidado(id = cuidadoId ?: 0, mascotaId = mascotaId,
+                repository.guardar(Cuidado(id = ruta.cuidadoId ?: 0, mascotaId = ruta.mascotaId,
                     tipoCuidadoId = tipoCuidadoId, fecha = fecha, notas = notas))
                 _eventos.send(RegistrarCuidadoEvento.GuardadoExitoso)
             } catch (e: Exception) {
@@ -376,98 +487,73 @@ class RegistrarCuidadoViewModel(
     }
 }
 ```
-`RegistrarCuidadoRoute` colecta `uiState` **y** escucha `eventos` con `LaunchedEffect`, para mostrar un Snackbar/Toast y volver a Detalle cuando llega `GuardadoExitoso`/`EliminadoExitoso` — esto es justo el patrón de "eventos puntuales con canales/flujos" que pide la rúbrica de la Etapa 2. `RegistrarCuidadoScreen` usa `OutlinedTextField` para fecha/notas y un `ExposedDropdownMenuBox` (Material 3) para elegir el tipo de cuidado. Wireframe "Pantalla 7 — Registrar/editar cuidado" + "Pantalla 8 — Detalle del cuidado" (para el botón eliminar).
+`RegistrarCuidadoRoute` colecta `uiState` **y** escucha `eventos` con `LaunchedEffect` para mostrar un Snackbar y volver cuando llega `GuardadoExitoso`/`EliminadoExitoso` — es el patrón de "eventos puntuales con canales" de la rúbrica. Formulario con `OutlinedTextField` + `ExposedDropdownMenuBox` (Material 3). Wireframes "Pantalla 7" y "Pantalla 8".
 
-### Persona D — `PetCareApp.kt` (contenedor, arma los ViewModels vía factory, navegación manual con `Pantalla`)
+### Persona D — `PetCareApp.kt` (ahora mucho más simple: solo el grafo de navegación)
 
 ```kotlin
 @Composable
-fun PetCareApp(appContainer: AppContainer) {
-    var pantallaActual by remember { mutableStateOf(Pantalla.HOME) }
-    var mascotaIdSeleccionada by remember { mutableStateOf<Int?>(null) }
-    var cuidadoIdSeleccionado by remember { mutableStateOf<Int?>(null) }
-
-    when (pantallaActual) {
-        Pantalla.HOME -> {
-            val factory = viewModelFactory { initializer { HomeViewModel(appContainer.mascotaRepository) } }
-            HomeRoute(viewModel = viewModel(factory = factory),
-                onVerMascotasClick = { pantallaActual = Pantalla.MASCOTAS })
+fun PetCareApp(navController: NavHostController = rememberNavController()) {
+    NavHost(navController = navController, startDestination = PetCareRoute.Home) {
+        composable<PetCareRoute.Home> {
+            HomeRoute(onVerMascotasClick = { navController.navigate(PetCareRoute.Mascotas) })
         }
 
-        Pantalla.MASCOTAS -> {
-            val factory = viewModelFactory { initializer { MascotasViewModel(appContainer.mascotaRepository) } }
+        composable<PetCareRoute.Mascotas> {
             MascotasRoute(
-                viewModel = viewModel(factory = factory),
-                onMascotaClick = { id -> mascotaIdSeleccionada = id; pantallaActual = Pantalla.DETALLE },
-                onBackClick = { pantallaActual = Pantalla.HOME }
+                onMascotaClick = { id -> navController.navigate(PetCareRoute.Detalle(mascotaId = id)) },
+                onBackClick = { navController.popBackStack() }
             )
         }
 
-        Pantalla.DETALLE -> {
-            val id = mascotaIdSeleccionada
-            if (id != null) {
-                val factory = viewModelFactory {
-                    initializer { DetalleMascotaViewModel(id, appContainer.mascotaRepository, appContainer.cuidadoRepository) }
-                }
-                DetalleMascotaRoute(
-                    viewModel = viewModel(factory = factory),
-                    onRegistrarCuidadoClick = { cuidadoIdSeleccionado = null; pantallaActual = Pantalla.REGISTRAR_CUIDADO },
-                    onCuidadoClick = { cuidadoId -> cuidadoIdSeleccionado = cuidadoId; pantallaActual = Pantalla.REGISTRAR_CUIDADO },
-                    onBackClick = { pantallaActual = Pantalla.MASCOTAS }
-                )
-            }
+        composable<PetCareRoute.Detalle> { backStackEntry ->
+            val ruta = backStackEntry.toRoute<PetCareRoute.Detalle>()
+            DetalleMascotaRoute(
+                onRegistrarCuidadoClick = {
+                    navController.navigate(PetCareRoute.RegistrarCuidado(mascotaId = ruta.mascotaId))
+                },
+                onCuidadoClick = { cuidadoId ->
+                    navController.navigate(PetCareRoute.RegistrarCuidado(mascotaId = ruta.mascotaId, cuidadoId = cuidadoId))
+                },
+                onBackClick = { navController.popBackStack() }
+            )
         }
 
-        Pantalla.REGISTRAR_CUIDADO -> {
-            val mascotaId = mascotaIdSeleccionada
-            if (mascotaId != null) {
-                val factory = viewModelFactory {
-                    initializer { RegistrarCuidadoViewModel(mascotaId, cuidadoIdSeleccionado, appContainer.cuidadoRepository) }
-                }
-                RegistrarCuidadoRoute(
-                    viewModel = viewModel(factory = factory),
-                    onListo = { pantallaActual = Pantalla.DETALLE }
-                )
-            }
+        composable<PetCareRoute.RegistrarCuidado> {
+            RegistrarCuidadoRoute(onListo = { navController.popBackStack() })
         }
     }
 }
 ```
 
 Notas para esta persona:
-- El `viewModelFactory { initializer { ... } }` sigue siendo un `ViewModelProvider.Factory` válido.
-- Sigue sin `NavHost`, así que el botón físico/gesto de "atrás" del sistema sigue sin retroceder solo entre pantallas — mismo caveat de siempre.
-- Ahora coordina la integración de **2 repositorios** (`mascotaRepository`, `cuidadoRepository`), no solo uno.
+- **Ya no hay estado local en este composable** (ni `pantallaActual`, ni `mascotaIdSeleccionada`, ni `cuidadoIdSeleccionado`) — todo lo maneja `NavController` y las rutas tipadas. Esto es justo lo que pedía la corrección del profesor.
+- **Ya no hay `viewModelFactory` ni `AppContainer`** — cada `XRoute` obtiene su propio ViewModel con `hiltViewModel()`.
+- El botón físico/gesto de "atrás" del sistema **ahora sí funciona solo**, gratis, porque lo da `NavHost`/`NavController` — ya no es una limitación de esta entrega.
+- Esta persona también deja lista la parte de Hilt (Paso 0.6: módulos + `PetCareApplication` + `AndroidManifest.xml`).
 
 ## Paso 2 — Integración y verificación (todo el equipo)
 
 1. Cada persona sube su(s) archivo(s) a su propia rama y abre PR contra `main`.
-2. Se integra en orden: `data/` completo (las 3 entidades + los 2 repositorios) + `AppContainer` + `Pantalla`, luego las pantallas (Home, Mascotas, Detalle, RegistrarCuidado), luego `PetCareApp.kt` + `MainActivity.kt`.
-3. Compilar y correr. Probar a mano el **comportamiento offline-first** (lo van a pedir en la demo en vivo de la presentación de cierre):
-   - Abrir la app: Home muestra "1" mascota.
-   - Ir a Detalle de Rocky, tocar "Registrar cuidado", elegir un tipo (p. ej. "Baño"), poner fecha y notas, guardar.
-   - Verificar que aparece de inmediato en la lista de cuidados de Rocky (sin recargar nada a mano — eso es la reactividad de `Flow`).
-   - Tocar ese cuidado para editarlo, cambiar la nota, guardar — se actualiza en la lista.
-   - Eliminarlo — desaparece de la lista.
-   - **Cerrar la app por completo (matar el proceso), activar modo avión, y volver a abrirla**: todo lo que quedó guardado (Rocky y los cuidados que no borraste) debe seguir ahí — es la prueba explícita que pide el documento de la Etapa 2 para la presentación.
-4. Revisar que ningún `XScreen` reciba el ViewModel ni el repositorio directamente.
-5. Revisar que ningún ViewModel cree `PetCareDatabase`, `MascotaRepositoryImpl` o `CuidadoRepositoryImpl` directamente — siempre a través de `AppContainer`.
+2. Se integra en orden: `data/` completo + `di/` + `PetCareApplication.kt` + `PetCareRoute.kt`, luego las pantallas, luego `PetCareApp.kt` + `MainActivity.kt` + `AndroidManifest.xml`.
+3. Compilar y correr. Probar a mano:
+   - Flujo completo: Home → Mascotas → Detalle de Rocky → Registrar cuidado (elegir tipo, fecha, notas) → guardar → aparece al instante en la lista → editarlo → eliminarlo.
+   - **Botón físico de "atrás" del sistema** en cada pantalla — debe regresar correctamente por la pila de navegación (esto es nuevo, antes no se podía probar).
+   - **Offline-first**: cerrar la app por completo (matar el proceso), activar modo avión, volver a abrirla — todo lo que no se borró debe seguir ahí.
+4. Revisar que ningún `XScreen` reciba el ViewModel directamente.
+5. Revisar que ningún ViewModel ni Repository se instancie con `new`/constructor directo en ningún lado — todo debe venir de Hilt (`@Inject`, `@Provides`, `@Binds`).
 
 ## Recordatorio: presentación de cierre (elevator pitch, 5 minutos)
 
-Esto no es una tarea de código, pero el documento de la Etapa 2 la exige junto con la entrega, así que no hay que olvidarla al planear los tiempos del equipo:
-
 - **1 min** — nombre de la app y el problema que resuelve.
-- **2 min** — demo en vivo: registrar/editar/eliminar un cuidado de Rocky, y la prueba de offline-first (cerrar app + modo avión + reabrir).
-- **2 min** — arquitectura: mostrar el `Route`/`Screen` sin pasar el ViewModel, el `StateFlow`/`Flow` desde Room hasta la UI, y cómo se entregan el repositorio y el ViewModel sin instanciarlos a mano (`AppContainer`).
-- Los 4 integrantes deben poder responder preguntas de cualquier capa (esto lo dice el documento explícitamente), así que conviene que cada quien entienda al menos su propia capa a fondo antes del día de la presentación.
+- **2 min** — demo en vivo: registrar/editar/eliminar un cuidado, navegación con el botón físico de atrás, y la prueba de offline-first (cerrar app + modo avión + reabrir).
+- **2 min** — arquitectura: `Route`/`Screen` sin pasar el ViewModel, `StateFlow`/`Flow` desde Room hasta la UI, **y cómo Hilt inyecta el repositorio y el ViewModel sin instanciarlos a mano** (mostrar un `@Module` y un `@HiltViewModel`).
+- Los 4 integrantes deben poder responder preguntas de cualquier capa.
 
 ## Fuera de alcance de esta entrega (a propósito)
 
-- **NavHost/NavController de Navigation Compose** — se usará cuando el profesor lo habilite. La navegación sigue siendo manual, con `Pantalla` + `when` en el contenedor.
-- **Registrar/editar/eliminar Mascota** — sigue de solo lectura, precargada con Rocky. El CRUD completo que se agregó en esta versión es sobre `Cuidado`, no sobre `Mascota`.
+- **Registrar/editar/eliminar Mascota** — sigue de solo lectura, precargada con Rocky. El CRUD completo es sobre `Cuidado`.
 - DataStore, Splash Screen, pantalla de Configuración — siguen pendientes.
-- `Hilt` como alternativa a `AppContainer` — se usa DI manual por ahora.
-- Casos de uso (`UseCases`) de la capa de dominio — es un extra opcional del documento (+0.3 pts) y por ahora la lógica de cada ViewModel es simple, no hay validaciones/transformaciones complejas que justifiquen esa capa todavía.
-- Ícono adaptativo vectorizado (+0.3 pts) y diseño responsivo con `WindowSizeClass` (+0.4 pts) — son extras opcionales del documento, no obligatorios; se pueden agregar después si sobra tiempo.
-- Manejo del botón físico/gesto de "atrás" del sistema entre pantallas.
+- Casos de uso (`UseCases`) de la capa de dominio — extra opcional del documento (+0.3 pts), la lógica de cada ViewModel sigue siendo simple.
+- Ícono adaptativo vectorizado (+0.3 pts) y `WindowSizeClass` (+0.4 pts) — extras opcionales.
+- Modelos de IA on-device — mencionados como posibilidad por el profesor para quien le interese, no aplica al alcance de este equipo por ahora.
