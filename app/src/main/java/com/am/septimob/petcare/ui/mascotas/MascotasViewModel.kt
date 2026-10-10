@@ -8,6 +8,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.combine
 
 class MascotasViewModel(
     private val repository: MascotaRepository
@@ -18,6 +19,8 @@ class MascotasViewModel(
 
     val uiState: StateFlow<MascotasUiState> = _uiState
 
+    private val busquedaActual = MutableStateFlow("")
+
     init {
         observarMascotas()
     }
@@ -25,16 +28,33 @@ class MascotasViewModel(
     private fun observarMascotas() {
         viewModelScope.launch {
             try {
-                repository.obtenerMascotas().collect { mascotas ->
-                    _uiState.value = MascotasUiState.Success(mascotas)
+                combine(
+                    repository.obtenerMascotas(),
+                    busquedaActual
+                ) { mascotas, busqueda ->
+                    MascotasUiState.Success(
+                        mascotas = mascotas.filter { mascota ->
+                            mascota.nombre.contains(
+                                busqueda,
+                                ignoreCase = true
+                            )
+                        },
+                        busqueda = busqueda
+                    )
+                }.collect { estado ->
+                    _uiState.value = estado
                 }
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 _uiState.value = MascotasUiState.Error(
                     "No se pudieron cargar las mascotas"
                 )
             }
         }
+    }
+
+    fun actualizarBusqueda(texto: String) {
+        busquedaActual.value = texto
     }
 }

@@ -62,6 +62,8 @@ dependencies {
 
     //dependencia de ViewModel
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
+
+    implementation(libs.androidx.lifecycle.runtime.compose)
 }
 room {
     schemaDirectory("$projectDir/schemas")
