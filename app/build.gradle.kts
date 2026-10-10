@@ -59,6 +59,9 @@ dependencies {
 
     // Generación de código de Room
     ksp(libs.androidx.room.compiler)
+
+    //dependencia de ViewModel
+    implementation(libs.androidx.lifecycle.viewmodel.ktx)
 }
 room {
     schemaDirectory("$projectDir/schemas")
