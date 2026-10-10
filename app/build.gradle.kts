@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.androidx.room)
 }
 
 android {
@@ -58,4 +59,7 @@ dependencies {
 
     // Generación de código de Room
     ksp(libs.androidx.room.compiler)
+}
+room {
+    schemaDirectory("$projectDir/schemas")
 }
