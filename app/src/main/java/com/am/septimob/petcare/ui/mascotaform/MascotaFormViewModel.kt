@@ -78,6 +78,7 @@ class MascotaFormViewModel(
                 if (mascota == null) {
                     _uiState.value = _uiState.value.copy(
                         cargando = false,
+                        errorCarga = true,
                         error = "No se encontró la mascota"
                     )
                     return@launch
@@ -99,6 +100,7 @@ class MascotaFormViewModel(
             } catch (_: Exception) {
                 _uiState.value = _uiState.value.copy(
                     cargando = false,
+                    errorCarga = true,
                     error = "No se pudo cargar la mascota"
                 )
             }
@@ -139,7 +141,11 @@ class MascotaFormViewModel(
 
 
     fun guardarMascota() {
-        if (_uiState.value.guardando || _uiState.value.cargando) return
+        if (
+            _uiState.value.guardando ||
+            _uiState.value.cargando ||
+            _uiState.value.errorCarga
+        ) return
 
         if (!validarFormulario()) return
 
@@ -151,11 +157,6 @@ class MascotaFormViewModel(
         )
 
         viewModelScope.launch {
-            _uiState.value = estado.copy(
-                guardando = true,
-                error = null
-            )
-
             try {
                 val mascota = Mascota(
                     id = estado.id ?: 0L,

@@ -12,6 +12,7 @@ data class MascotaFormUiState(
     val fotoUri: String? = null,
     val cargando: Boolean = false,
     val guardando: Boolean = false,
+    val errorCarga: Boolean = false,
     val error: String? = null
 ) {
     val esEdicion: Boolean
