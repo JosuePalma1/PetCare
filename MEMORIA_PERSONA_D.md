@@ -67,6 +67,19 @@ cd .notas && git add -A && git commit -m "notas: ..." && git push
    `240799525+DumarMatamoros@users.noreply.github.com` (config local) y `gh auth setup-git` para credenciales.
    Claude **no** ejecuta commits/pull/push: me da los comandos y yo los corro.
 
+## Lo que B pidió a D (mensaje + `docs/PERSONA_B_MASCOTAS.md` §6)
+
+B autorizó explícitamente: *"si encuentran algún problema de compatibilidad, corríjanlo ustedes"* → cubre el `refactor(di)`.
+
+- [x] Crear `PetCareDatabase` → `DatabaseModule`
+- [x] Proveer `MascotaDao` y `MascotaRepository` → `DatabaseModule` / `RepositoryModule`
+- [x] Inyección de los ViewModels → `@HiltViewModel`
+- [ ] Conectar `MascotasRoute` con registro (`onAgregarMascota`) y detalle (`onMascotaClick`) → NavHost
+- [ ] Conectar `MascotaFormRoute`: `onCancelar` / `onGuardadoExitoso` → `popBackStack()`
+- [x] `mascotaId: Long?` al formulario → ahora viaja en `PetCareRoute.MascotaForm` (no como parámetro)
+- Al probar: usar la lista de pruebas de su §9 (registro, validaciones, búsqueda, edición, foto tras reiniciar,
+  eliminar en cascada, offline). Ojo: su doc dice que la BD tiene 1 entidad, pero C ya la amplió a 3 (v2).
+
 ## Puntos a resolver / riesgos detectados
 
 - ~~`RepositoryImpl` de B/C no tienen `@Inject`~~ → resuelto con `@Provides` en `RepositoryModule` (no toco sus archivos).
@@ -89,7 +102,7 @@ cd .notas && git add -A && git commit -m "notas: ..." && git push
 - [x] `feat(configuracion)`: UserPreferences + PreferenciasRepository(Impl) + DataStore
 - [x] `feat(di)`: PetCareApplication, DatabaseModule, RepositoryModule, DataStoreModule, Manifest, MainActivity
 - [x] `refactor(di)`: ViewModels de B y C a `@HiltViewModel` + SavedStateHandle (PetCareRoute adelantado)
-- [ ] `feat(configuracion)`: ConfiguracionScreen/ViewModel/Route/UiState
+- [x] `feat(configuracion)`: ConfiguracionScreen/ViewModel/Route/UiState
 - [ ] `feat(navegacion)`: PetCareRoute + PetCareApp (NavHost + bottom bar) con placeholders de Splash/Home
 - [ ] Compilar, probar flujo completo (ver Paso 2 del plan), escribir `docs/PERSONA_D_...md`, PR a `main`
 - [ ] **Al final**: redactar resumen de todos los cambios para A, B y C (sobre todo lo que toqué en sus archivos:
@@ -123,3 +136,8 @@ cd .notas && git add -A && git commit -m "notas: ..." && git push
   - 4 Routes: `viewModel: X = hiltViewModel()` pasa al **último** parámetro; se quitan `mascotaId`/`cuidadoId`
     y los `LaunchedEffect` que cargaban. `hiltViewModel` importado de `androidx.hilt.lifecycle.viewmodel.compose`
     (el de `hilt.navigation.compose` está deprecado en 1.3+).
+- **2026-10-11** — `ui/configuracion/`: UiState (Loading/Success), ViewModel (`@HiltViewModel`, `stateIn`
+  WhileSubscribed(5_000) desde DataStore), Route (`hiltViewModel()`), Screen (estilo de B: título 24sp bold,
+  3 Cards con grupos de RadioButton accesibles — fila entera `selectable`, `Role.RadioButton`). No había imagen
+  del wireframe "Pantalla 9" en el repo → diseño propio; validar con el equipo. Sin probar en pantalla aún
+  (hasta tener el NavHost).
