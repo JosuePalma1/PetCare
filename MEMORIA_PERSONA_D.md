@@ -86,7 +86,7 @@ cd .notas && git add -A && git commit -m "notas: ..." && git push
 
 - [x] Crear rama `feature/persona-d-navegacion-configuracion` desde `origin/tarea-c-cuidados`
 - [x] `build(di)`: Hilt + KSP, Navigation Compose, kotlinx-serialization, DataStore, hilt-navigation-compose
-- [ ] `feat(configuracion)`: UserPreferences + PreferenciasRepository(Impl) + DataStore
+- [x] `feat(configuracion)`: UserPreferences + PreferenciasRepository(Impl) + DataStore
 - [ ] `feat(di)`: PetCareApplication, DatabaseModule, RepositoryModule, DataStoreModule, Manifest, MainActivity
 - [ ] `refactor(di)`: ViewModels de B y C a `@HiltViewModel` + SavedStateHandle
 - [ ] `feat(configuracion)`: ConfiguracionScreen/ViewModel/Route/UiState
@@ -101,3 +101,8 @@ cd .notas && git add -A && git commit -m "notas: ..." && git push
   Hilt 2.60.1 (plugin + KSP), hilt-navigation-compose 1.4.0, navigation-compose 2.10.2,
   kotlinx-serialization 1.9.0 (no 1.10+, que podría requerir Kotlin 2.3), datastore-preferences 1.2.1,
   material-icons-extended (vía BOM). `assembleDebug` OK con AGP 9.3 / Kotlin 2.2.10.
+- **2026-10-11** — Commit `feat(configuracion)`: `domain/model/UserPreferences.kt` (enums + data class),
+  `data/repository/PreferenciasRepository.kt` + `PreferenciasRepositoryImpl.kt` (`@Inject constructor`, recibe
+  `DataStore<Preferences>`; claves string con `enum.name`; valor desconocido → default en vez de `valueOf` que crashea).
+  El `DataStore` se provee en `DataStoreModule` (siguiente paso). Nota: el commit `bbd242e` salió sin prefijo `build(di):`.
+  Pendiente decidir: `app/schemas/.../2.json` que genera Room (exportSchema de B/C) sin trackear.
