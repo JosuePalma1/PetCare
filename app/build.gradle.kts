@@ -3,6 +3,8 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.androidx.room)
+    alias(libs.plugins.hilt)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -65,6 +67,21 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
 
     implementation(libs.androidx.lifecycle.runtime.compose)
+
+    // Íconos extendidos (Icons.Default.Pets, etc.)
+    implementation(libs.androidx.compose.material.icons.extended)
+
+    // Inyección de dependencias con Hilt
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.compiler)
+    implementation(libs.androidx.hilt.navigation.compose)
+
+    // Navegación con rutas tipadas
+    implementation(libs.androidx.navigation.compose)
+    implementation(libs.kotlinx.serialization.json)
+
+    // Preferencias del usuario (Configuración)
+    implementation(libs.androidx.datastore.preferences)
 }
 room {
     schemaDirectory("$projectDir/schemas")
