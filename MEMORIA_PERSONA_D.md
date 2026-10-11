@@ -69,7 +69,7 @@ cd .notas && git add -A && git commit -m "notas: ..." && git push
 
 ## Puntos a resolver / riesgos detectados
 
-- `RepositoryImpl` de B/C no tienen `@Inject` → o se lo añado (con el refactor) o uso `@Provides` en el módulo.
+- ~~`RepositoryImpl` de B/C no tienen `@Inject`~~ → resuelto con `@Provides` en `RepositoryModule` (no toco sus archivos).
 - No existe `Room.databaseBuilder` → lo creo en `DatabaseModule`. `PetCareDatabase` está en `version = 2`
   con `exportSchema = true`; revisar si hace falta `fallbackToDestructiveMigration` (no hay migraciones).
   C tiene `TiposCuidadoIniciales.kt` → ver cómo se siembran (¿callback de Room?).
@@ -87,11 +87,13 @@ cd .notas && git add -A && git commit -m "notas: ..." && git push
 - [x] Crear rama `feature/persona-d-navegacion-configuracion` desde `origin/tarea-c-cuidados`
 - [x] `build(di)`: Hilt + KSP, Navigation Compose, kotlinx-serialization, DataStore, hilt-navigation-compose
 - [x] `feat(configuracion)`: UserPreferences + PreferenciasRepository(Impl) + DataStore
-- [ ] `feat(di)`: PetCareApplication, DatabaseModule, RepositoryModule, DataStoreModule, Manifest, MainActivity
-- [ ] `refactor(di)`: ViewModels de B y C a `@HiltViewModel` + SavedStateHandle
+- [x] `feat(di)`: PetCareApplication, DatabaseModule, RepositoryModule, DataStoreModule, Manifest, MainActivity
+- [x] `refactor(di)`: ViewModels de B y C a `@HiltViewModel` + SavedStateHandle (PetCareRoute adelantado)
 - [ ] `feat(configuracion)`: ConfiguracionScreen/ViewModel/Route/UiState
 - [ ] `feat(navegacion)`: PetCareRoute + PetCareApp (NavHost + bottom bar) con placeholders de Splash/Home
 - [ ] Compilar, probar flujo completo (ver Paso 2 del plan), escribir `docs/PERSONA_D_...md`, PR a `main`
+- [ ] **Al final**: redactar resumen de todos los cambios para A, B y C (sobre todo lo que toqué en sus archivos:
+  ViewModels con Hilt, Routes sin `viewModel`/ids, `fallbackToDestructiveMigration`, `2.json` de Room, nombres de rutas)
 
 ## Bitácora
 
@@ -106,3 +108,18 @@ cd .notas && git add -A && git commit -m "notas: ..." && git push
   `DataStore<Preferences>`; claves string con `enum.name`; valor desconocido → default en vez de `valueOf` que crashea).
   El `DataStore` se provee en `DataStoreModule` (siguiente paso). Nota: el commit `bbd242e` salió sin prefijo `build(di):`.
   Pendiente decidir: `app/schemas/.../2.json` que genera Room (exportSchema de B/C) sin trackear.
+- **2026-10-11** — Rebase para renombrar `bbd242e` no aplicado → se queda sin prefijo (aceptado).
+- **2026-10-11** — Commit `feat(di)`: `PetCareApplication` (@HiltAndroidApp) + `android:name` en Manifest,
+  `MainActivity` @AndroidEntryPoint (aún con el Greeting de plantilla), `di/DatabaseModule` (Room
+  `petcare_database` + callback `TiposCuidadoIniciales` + `fallbackToDestructiveMigration(dropAllTables = true)`
+  porque v2 no tiene migraciones; DAOs), `di/DataStoreModule` (`petcare_preferencias`),
+  `di/RepositoryModule` (object con `@Provides` para los 3 repos). `assembleDebug` OK.
+- **2026-10-11** — `ui/navigation/PetCareRoute.kt` creado antes de lo previsto (lo necesita `toRoute`). Rutas con
+  nombres reales: `DetalleMascota(mascotaId: Long)`, `MascotaForm(mascotaId: Long? = null)`,
+  `CuidadoForm(mascotaId: Long, cuidadoId: Long? = null)` + `Splash`, `Home`, `Mascotas`, `Configuracion`.
+- **2026-10-11** — `refactor(di)` en archivos de B y C:
+  - 4 ViewModels → `@HiltViewModel` + `@Inject constructor`. Los de formulario/detalle reciben `SavedStateHandle`
+    y leen ids con `toRoute<PetCareRoute.X>()`; MascotaForm y CuidadoForm llaman `cargarX(id)` en `init`.
+  - 4 Routes: `viewModel: X = hiltViewModel()` pasa al **último** parámetro; se quitan `mascotaId`/`cuidadoId`
+    y los `LaunchedEffect` que cargaban. `hiltViewModel` importado de `androidx.hilt.lifecycle.viewmodel.compose`
+    (el de `hilt.navigation.compose` está deprecado en 1.3+).
