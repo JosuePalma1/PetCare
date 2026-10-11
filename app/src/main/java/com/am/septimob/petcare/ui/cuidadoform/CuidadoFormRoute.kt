@@ -4,20 +4,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 
 @Composable
 fun CuidadoFormRoute(
-    viewModel: CuidadoFormViewModel,
-    cuidadoId: Long? = null,
     onCancelar: () -> Unit,
-    onListo: () -> Unit
+    onListo: () -> Unit,
+    viewModel: CuidadoFormViewModel = hiltViewModel()
 ) {
-    LaunchedEffect(cuidadoId) {
-        if (cuidadoId != null) {
-            viewModel.cargarCuidado(cuidadoId)
-        }
-    }
-
     LaunchedEffect(viewModel) {
         viewModel.listo.collect {
             onListo()

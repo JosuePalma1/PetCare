@@ -6,15 +6,16 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 
 @Composable
 fun DetalleMascotaRoute(
-    viewModel: DetalleMascotaViewModel,
     onEditarMascota: () -> Unit,
     onRegistrarCuidado: () -> Unit,
     onCuidadoClick: (Long) -> Unit,
     onMascotaEliminada: () -> Unit,
-    onVolver: () -> Unit
+    onVolver: () -> Unit,
+    viewModel: DetalleMascotaViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current

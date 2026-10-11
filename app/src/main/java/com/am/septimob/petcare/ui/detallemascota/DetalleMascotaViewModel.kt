@@ -1,12 +1,16 @@
 package com.am.septimob.petcare.ui.detallemascota
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.navigation.toRoute
 import com.am.septimob.petcare.data.repository.CuidadoRepository
 import com.am.septimob.petcare.data.repository.MascotaRepository
 import com.am.septimob.petcare.domain.model.Cuidado
 import com.am.septimob.petcare.domain.model.Mascota
 import com.am.septimob.petcare.domain.model.TipoCuidado
+import com.am.septimob.petcare.ui.navigation.PetCareRoute
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -15,17 +19,22 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 sealed interface DetalleMascotaEvento {
     data object MascotaEliminada : DetalleMascotaEvento
     data class Error(val mensaje: String) : DetalleMascotaEvento
 }
 
-class DetalleMascotaViewModel(
-    private val mascotaId: Long,
+@HiltViewModel
+class DetalleMascotaViewModel @Inject constructor(
+    savedStateHandle: SavedStateHandle,
     private val mascotaRepository: MascotaRepository,
     private val cuidadoRepository: CuidadoRepository
 ) : ViewModel() {
+
+    private val mascotaId: Long =
+        savedStateHandle.toRoute<PetCareRoute.DetalleMascota>().mascotaId
 
     private val _uiState =
         MutableStateFlow<DetalleMascotaUiState>(DetalleMascotaUiState.Loading)

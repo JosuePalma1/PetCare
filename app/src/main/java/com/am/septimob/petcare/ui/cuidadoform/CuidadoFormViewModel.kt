@@ -1,9 +1,13 @@
 package com.am.septimob.petcare.ui.cuidadoform
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.navigation.toRoute
 import com.am.septimob.petcare.data.repository.CuidadoRepository
 import com.am.septimob.petcare.domain.model.Cuidado
+import com.am.septimob.petcare.ui.navigation.PetCareRoute
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -12,11 +16,16 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.TimeZone
+import javax.inject.Inject
 
-class CuidadoFormViewModel(
-    private val mascotaId: Long,
+@HiltViewModel
+class CuidadoFormViewModel @Inject constructor(
+    savedStateHandle: SavedStateHandle,
     private val repository: CuidadoRepository
 ) : ViewModel() {
+
+    private val ruta = savedStateHandle.toRoute<PetCareRoute.CuidadoForm>()
+    private val mascotaId: Long = ruta.mascotaId
 
     private val _uiState = MutableStateFlow(CuidadoFormUiState(fecha = hoyEnDias()))
     val uiState: StateFlow<CuidadoFormUiState> = _uiState
@@ -29,6 +38,8 @@ class CuidadoFormViewModel(
 
     init {
         observarTipos()
+        // Si la ruta trae cuidadoId, es edición y se cargan los datos
+        ruta.cuidadoId?.let(::cargarCuidado)
     }
 
     private fun observarTipos() {
