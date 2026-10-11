@@ -4,20 +4,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 
 @Composable
 fun MascotaFormRoute(
-    viewModel: MascotaFormViewModel,
-    mascotaId: Long? = null,
     onCancelar: () -> Unit,
-    onGuardadoExitoso: () -> Unit
+    onGuardadoExitoso: () -> Unit,
+    viewModel: MascotaFormViewModel = hiltViewModel()
 ) {
-    LaunchedEffect(mascotaId) {
-        if (mascotaId != null) {
-            viewModel.cargarMascota(mascotaId)
-        }
-    }
-
     LaunchedEffect(viewModel) {
         viewModel.guardadoExitoso.collect {
             onGuardadoExitoso()

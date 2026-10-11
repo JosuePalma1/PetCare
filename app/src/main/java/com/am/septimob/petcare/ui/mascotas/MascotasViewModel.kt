@@ -9,8 +9,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.combine
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 
-class MascotasViewModel(
+@HiltViewModel
+class MascotasViewModel @Inject constructor(
     private val repository: MascotaRepository
 ) : ViewModel() {
 

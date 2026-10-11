@@ -1,6 +1,7 @@
 
 package com.am.septimob.petcare.ui.mascotaform
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import com.am.septimob.petcare.data.repository.MascotaRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -12,8 +13,14 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.first
+import androidx.navigation.toRoute
+import com.am.septimob.petcare.ui.navigation.PetCareRoute
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 
-class MascotaFormViewModel(
+@HiltViewModel
+class MascotaFormViewModel @Inject constructor(
+    savedStateHandle: SavedStateHandle,
     private val repository: MascotaRepository
 ) : ViewModel() {
 
@@ -25,6 +32,11 @@ class MascotaFormViewModel(
     private val _guardadoExitoso = Channel<Unit>(Channel.BUFFERED)
 
     val guardadoExitoso = _guardadoExitoso.receiveAsFlow()
+
+    init {
+        // El id llega en la ruta: si viene, es edición y se cargan los datos
+        savedStateHandle.toRoute<PetCareRoute.MascotaForm>().mascotaId?.let(::cargarMascota)
+    }
 
     fun actualizarNombre(nombre: String) {
         _uiState.value = _uiState.value.copy(
