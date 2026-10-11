@@ -120,7 +120,8 @@ avisarle para que no duplique trabajo.
 - [x] `feat(configuracion)`: ConfiguracionScreen/ViewModel/Route/UiState
 - [x] `feat(navegacion)`: PetCareRoute + PetCareApp (NavHost + bottom bar) con placeholders de Splash/Home
 - [x] Compilar, probar flujo completo, escribir `docs/PERSONA_D_NAVEGACION_CONFIGURACION.md`
-- [ ] PR a `main` (decidir: ¿incluye B y C o esperan sus PRs?)
+- [ ] PR a `main` — **pospuesto hasta que A termine** (decisión 2026-10-11). Al hacerlo: preguntar si el profe pide PR por persona;
+  si no, un solo PR desde la rama final. **Nunca "Squash and merge"** (borra autoría de B/C y rompe la cadena) → usar "Create a merge commit".
 - [ ] **Al final**: redactar resumen de todos los cambios para A, B y C (sobre todo lo que toqué en sus archivos:
   ViewModels con Hilt, Routes sin `viewModel`/ids, `fallbackToDestructiveMigration`, `2.json` de Room, nombres de rutas)
 
@@ -180,3 +181,6 @@ avisarle para que no duplique trabajo.
   Use Cases (solo `domain/model`). Decisión del usuario: **los 3 extras (+1.0 pt) los hace Persona A**. Documentado en
   `docs/plan-tecnico-implementacion.md` (Fuera de alcance) y `docs/PERSONA_D_NAVEGACION_CONFIGURACION.md` §9.
   A debe avisarme antes de tocar `PetCareApp.kt` (WindowSizeClass) y avisar a B/C por los ViewModels (Use Cases).
+- **2026-10-11** — Commit del `2.json` de Room (B subió `1.json` en `d1189dc`; C subió a v2 sin el json).
+  PR pospuesto hasta que A termine. Mientras tanto, todo el equipo debe partir de mi rama: A crea su rama desde
+  `feature/persona-d-navegacion-configuracion`; B y C hacen sus arreglos ahí o en ramas nuevas desde ella.
