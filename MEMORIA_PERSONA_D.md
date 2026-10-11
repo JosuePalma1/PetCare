@@ -38,7 +38,7 @@ cd .notas && git add -A && git commit -m "notas: ..." && git push
 | A — Splash + Home | (sin rama todavía) | Pendiente → usaré placeholders en el NavHost |
 | B — Mascotas + Form mascota (JosuePalma1) | `feature/persona-b-mascotas-crud` | Subido. Documentó en `docs/PERSONA_B_MASCOTAS.md` |
 | C — Detalle + Form cuidado (yimmileo) | `tarea-c-cuidados` | Subido, **construido encima de la rama de B** |
-| D — yo | `feature/persona-d-navegacion-configuracion` | Bases definidas, sin código aún |
+| D — yo | `feature/persona-d-navegacion-configuracion` | Rama creada, dependencias añadidas |
 
 ## Convenciones reales del proyecto (mandan sobre el plan)
 
@@ -63,6 +63,9 @@ cd .notas && git add -A && git commit -m "notas: ..." && git push
    Hacerlo en commits separados `refactor(di): ...` y **avisar a B y C**.
 3. **Memoria**: este archivo en rama huérfana `notas/persona-d`, montada como worktree en `.notas/`
    (excluida vía `.git/info/exclude`, no en `.gitignore`).
+4. **Identidad git**: en este repo uso el correo noreply de GitHub
+   `240799525+DumarMatamoros@users.noreply.github.com` (config local) y `gh auth setup-git` para credenciales.
+   Claude **no** ejecuta commits/pull/push: me da los comandos y yo los corro.
 
 ## Puntos a resolver / riesgos detectados
 
@@ -81,8 +84,8 @@ cd .notas && git add -A && git commit -m "notas: ..." && git push
 
 ## Próximos pasos
 
-- [ ] Crear rama `feature/persona-d-navegacion-configuracion` desde `origin/tarea-c-cuidados`
-- [ ] `build(di)`: Hilt + KSP, Navigation Compose, kotlinx-serialization, DataStore, hilt-navigation-compose
+- [x] Crear rama `feature/persona-d-navegacion-configuracion` desde `origin/tarea-c-cuidados`
+- [x] `build(di)`: Hilt + KSP, Navigation Compose, kotlinx-serialization, DataStore, hilt-navigation-compose
 - [ ] `feat(configuracion)`: UserPreferences + PreferenciasRepository(Impl) + DataStore
 - [ ] `feat(di)`: PetCareApplication, DatabaseModule, RepositoryModule, DataStoreModule, Manifest, MainActivity
 - [ ] `refactor(di)`: ViewModels de B y C a `@HiltViewModel` + SavedStateHandle
@@ -93,3 +96,8 @@ cd .notas && git add -A && git commit -m "notas: ..." && git push
 ## Bitácora
 
 - **2026-10-11** — Análisis de ramas de B y C, definición de convenciones y decisiones. Creada rama de notas.
+- **2026-10-11** — Identidad git pasa a correo noreply de GitHub; se reescriben los 2 commits iniciales de notas.
+- **2026-10-11** — Creada rama `feature/persona-d-navegacion-configuracion` desde `073d6fa`. Commit `build(di)`:
+  Hilt 2.60.1 (plugin + KSP), hilt-navigation-compose 1.4.0, navigation-compose 2.10.2,
+  kotlinx-serialization 1.9.0 (no 1.10+, que podría requerir Kotlin 2.3), datastore-preferences 1.2.1,
+  material-icons-extended (vía BOM). `assembleDebug` OK con AGP 9.3 / Kotlin 2.2.10.
