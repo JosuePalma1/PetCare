@@ -119,7 +119,8 @@ avisarle para que no duplique trabajo.
 - [x] `refactor(di)`: ViewModels de B y C a `@HiltViewModel` + SavedStateHandle (PetCareRoute adelantado)
 - [x] `feat(configuracion)`: ConfiguracionScreen/ViewModel/Route/UiState
 - [x] `feat(navegacion)`: PetCareRoute + PetCareApp (NavHost + bottom bar) con placeholders de Splash/Home
-- [ ] Compilar, probar flujo completo (ver Paso 2 del plan), escribir `docs/PERSONA_D_...md`, PR a `main`
+- [x] Compilar, probar flujo completo, escribir `docs/PERSONA_D_NAVEGACION_CONFIGURACION.md`
+- [ ] PR a `main` (decidir: ¿incluye B y C o esperan sus PRs?)
 - [ ] **Al final**: redactar resumen de todos los cambios para A, B y C (sobre todo lo que toqué en sus archivos:
   ViewModels con Hilt, Routes sin `viewModel`/ids, `fallbackToDestructiveMigration`, `2.json` de Room, nombres de rutas)
 
@@ -168,3 +169,14 @@ avisarle para que no duplique trabajo.
   Sin verificar a nivel BD el CASCADE (emulador sin `sqlite3`), pero la FK lo declara. No probado: foto, fecha
   de nacimiento, validaciones, búsqueda, modo offline.
   Truco emulador: desactivar tutorial de stylus de Gboard → `adb shell settings put secure stylus_handwriting_enabled 0`.
+- **2026-10-11** — Pruebas restantes de B, todas ✅: validaciones (nombre, especie, peso 0), fecha de nacimiento
+  (guardada 20731 = 05/10/2026 en días), búsqueda sin mayúsculas, foto persiste tras force-stop, offline (modo avión).
+  **CASCADE verificado en BD**: se copia la BD con `adb exec-out run-as com.am.septimob.petcare cat databases/<f>`
+  (+ `-wal`, `-shm`) y se consulta con `sqlite3` de Python en el PC (no hace falta instalar sqlite3 en el emulador).
+  Hallazgos para B: label "Macho/Hembra" no seleccionable (solo el círculo) → sexo queda ''; tarjeta "Gato · " sin raza.
+- **2026-10-11** — Escrito `docs/PERSONA_D_NAVEGACION_CONFIGURACION.md` (incluye §6 con los cambios en archivos
+  de B y C → sirve de base para el resumen al equipo).
+- **2026-10-11** — Revisadas todas las ramas: **ninguna** tiene WindowSizeClass, ícono propio (solo el de plantilla) ni
+  Use Cases (solo `domain/model`). Decisión del usuario: **los 3 extras (+1.0 pt) los hace Persona A**. Documentado en
+  `docs/plan-tecnico-implementacion.md` (Fuera de alcance) y `docs/PERSONA_D_NAVEGACION_CONFIGURACION.md` §9.
+  A debe avisarme antes de tocar `PetCareApp.kt` (WindowSizeClass) y avisar a B/C por los ViewModels (Use Cases).
