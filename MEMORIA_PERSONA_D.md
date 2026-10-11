@@ -6,7 +6,7 @@
 ## Cómo usar este archivo en otro dispositivo
 
 ```bash
-git clone https://github.com/DumarMatamoros/PetCare.git   # o git fetch si ya está clonado
+git clone https://github.com/JosuePalma1/PetCare.git   # o git fetch si ya está clonado
 cd PetCare
 echo ".notas/" >> .git/info/exclude                       # que git del proyecto ignore la carpeta
 git worktree add .notas notas/persona-d                   # monta la rama de notas en .notas/
