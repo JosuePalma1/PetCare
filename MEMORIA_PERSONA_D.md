@@ -74,11 +74,26 @@ B autorizó explícitamente: *"si encuentran algún problema de compatibilidad, 
 - [x] Crear `PetCareDatabase` → `DatabaseModule`
 - [x] Proveer `MascotaDao` y `MascotaRepository` → `DatabaseModule` / `RepositoryModule`
 - [x] Inyección de los ViewModels → `@HiltViewModel`
-- [ ] Conectar `MascotasRoute` con registro (`onAgregarMascota`) y detalle (`onMascotaClick`) → NavHost
-- [ ] Conectar `MascotaFormRoute`: `onCancelar` / `onGuardadoExitoso` → `popBackStack()`
+- [x] Conectar `MascotasRoute` con registro (`onAgregarMascota`) y detalle (`onMascotaClick`) → NavHost
+- [x] Conectar `MascotaFormRoute`: `onCancelar` / `onGuardadoExitoso` → `popBackStack()`
 - [x] `mascotaId: Long?` al formulario → ahora viaja en `PetCareRoute.MascotaForm` (no como parámetro)
 - Al probar: usar la lista de pruebas de su §9 (registro, validaciones, búsqueda, edición, foto tras reiniciar,
   eliminar en cascada, offline). Ojo: su doc dice que la BD tiene 1 entidad, pero C ya la amplió a 3 (v2).
+
+## Lo que C pidió a D (mensaje de C)
+
+C ofreció adaptar él mismo sus ViewModels a Hilt y encargarse de las rutas de Detalle/Cuidado → **ya lo hice yo**;
+avisarle para que no duplique trabajo.
+
+- [x] `databaseBuilder` + `addCallback(TiposCuidadoIniciales)` → `DatabaseModule` (nombre `petcare_database`; C sugirió `petcare.db`, da igual)
+- [x] `CuidadoRepositoryImpl(cuidadoDao, tipoCuidadoDao)` provisto → `RepositoryModule`
+- [x] `DetalleMascotaViewModel` / `CuidadoFormViewModel` con id de la ruta → Hilt + `SavedStateHandle`
+- [x] NavHost con ids `Long`:
+  - Detalle `onEditarMascota` → `MascotaForm(mascotaId)`
+  - Detalle `onRegistrarCuidado` → `CuidadoForm(mascotaId)`; `onCuidadoClick(id)` → `CuidadoForm(mascotaId, id)`
+  - Detalle `onMascotaEliminada` → volver a la lista (`popBackStack` hasta `Mascotas`)
+- C dice que con BD v2 hay que desinstalar la app del emulador; con `fallbackToDestructiveMigration` ya no hace falta.
+- Pruebas de C: crear/editar/eliminar cuidados, eliminar mascota con cascada, persistencia tras cerrar la app.
 
 ## Puntos a resolver / riesgos detectados
 
@@ -103,7 +118,7 @@ B autorizó explícitamente: *"si encuentran algún problema de compatibilidad, 
 - [x] `feat(di)`: PetCareApplication, DatabaseModule, RepositoryModule, DataStoreModule, Manifest, MainActivity
 - [x] `refactor(di)`: ViewModels de B y C a `@HiltViewModel` + SavedStateHandle (PetCareRoute adelantado)
 - [x] `feat(configuracion)`: ConfiguracionScreen/ViewModel/Route/UiState
-- [ ] `feat(navegacion)`: PetCareRoute + PetCareApp (NavHost + bottom bar) con placeholders de Splash/Home
+- [x] `feat(navegacion)`: PetCareRoute + PetCareApp (NavHost + bottom bar) con placeholders de Splash/Home
 - [ ] Compilar, probar flujo completo (ver Paso 2 del plan), escribir `docs/PERSONA_D_...md`, PR a `main`
 - [ ] **Al final**: redactar resumen de todos los cambios para A, B y C (sobre todo lo que toqué en sus archivos:
   ViewModels con Hilt, Routes sin `viewModel`/ids, `fallbackToDestructiveMigration`, `2.json` de Room, nombres de rutas)
@@ -141,3 +156,15 @@ B autorizó explícitamente: *"si encuentran algún problema de compatibilidad, 
   3 Cards con grupos de RadioButton accesibles — fila entera `selectable`, `Role.RadioButton`). No había imagen
   del wireframe "Pantalla 9" en el repo → diseño propio; validar con el equipo. Sin probar en pantalla aún
   (hasta tener el NavHost).
+- **2026-10-11** — `feat(navegacion)`: `ui/navigation/PetCareApp.kt` (Scaffold + NavHost 7 rutas + NavigationBar
+  Inicio/Mascotas/Ajustes, visible solo en esas 3; pestañas con `popUpTo<Home>{saveState}` + `launchSingleTop` +
+  `restoreState`; `volverDesde(entry)` evita doble pop; padding + `consumeWindowInsets` + `imePadding`),
+  `ui/navigation/PantallasPendientes.kt` (`SplashPendiente` 1 s → Home sin volver atrás, `HomePendiente`) — borrar
+  cuando A suba lo suyo. `MainActivity` ya muestra `PetCareApp()` (fuera el Greeting).
+- **2026-10-11** — **Probado en emulador** (Medium_Phone_API_37.0): Splash→Inicio ✅; Ajustes cambia y **persiste tras
+  force-stop** ✅; registrar mascota → vuelve a lista ✅; detalle con datos ✅; 4 tipos de cuidado sembrados ✅;
+  registrar cuidado → aparece en detalle ✅; editar cuidado carga datos ✅; editar mascota carga datos ✅; eliminar
+  mascota (con diálogo) → vuelve a lista vacía ✅; atrás: Ajustes→Inicio→sale ✅; teclado no tapa el formulario ✅.
+  Sin verificar a nivel BD el CASCADE (emulador sin `sqlite3`), pero la FK lo declara. No probado: foto, fecha
+  de nacimiento, validaciones, búsqueda, modo offline.
+  Truco emulador: desactivar tutorial de stylus de Gboard → `adb shell settings put secure stylus_handwriting_enabled 0`.
