@@ -12,6 +12,8 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.windowsizeclass.WindowSizeClass
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -27,11 +29,14 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
 import com.am.septimob.petcare.ui.configuracion.ConfiguracionRoute
 import com.am.septimob.petcare.ui.cuidadoform.CuidadoFormRoute
 import com.am.septimob.petcare.ui.detallemascota.DetalleMascotaRoute
+import com.am.septimob.petcare.ui.home.HomeRoute
 import com.am.septimob.petcare.ui.mascotaform.MascotaFormRoute
 import com.am.septimob.petcare.ui.mascotas.MascotasRoute
+import com.am.septimob.petcare.ui.splash.SplashRoute
 import kotlin.reflect.KClass
 
 private data class PestanaInferior(
@@ -48,7 +53,11 @@ private val pestanas = listOf(
 )
 
 @Composable
-fun PetCareApp(navController: NavHostController = rememberNavController()) {
+@OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
+fun PetCareApp(
+    windowSizeClass: WindowSizeClass,
+    navController: NavHostController = rememberNavController()
+) {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val destinoActual = backStackEntry?.destination
 
@@ -71,8 +80,8 @@ fun PetCareApp(navController: NavHostController = rememberNavController()) {
                 .imePadding()
         ) {
             composable<PetCareRoute.Splash> {
-                SplashPendiente(
-                    onTimeout = {
+                SplashRoute(
+                    onFinished = {
                         navController.navigate(PetCareRoute.Home) {
                             popUpTo<PetCareRoute.Splash> { inclusive = true }
                         }
@@ -81,7 +90,10 @@ fun PetCareApp(navController: NavHostController = rememberNavController()) {
             }
 
             composable<PetCareRoute.Home> {
-                HomePendiente()
+                HomeRoute(
+                    onVerMascotasClick = { navController.navigate(PetCareRoute.Mascotas) },
+                    isExpanded = windowSizeClass.widthSizeClass == WindowWidthSizeClass.Expanded
+                )
             }
 
             composable<PetCareRoute.Mascotas> {
