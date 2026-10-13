@@ -1,22 +1,41 @@
 package com.am.septimob.petcare.ui.cuidadoform
 
+import android.graphics.BitmapFactory
+import android.net.Uri
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -29,10 +48,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -66,29 +89,64 @@ fun CuidadoFormScreen(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(16.dp)
+            .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
-        Text(
-            text = if (uiState.esEdicion) "Editar cuidado" else "Registrar cuidado",
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onCancelar, enabled = !uiState.guardando) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Volver"
+                )
+            }
+            Text(
+                text = if (uiState.esEdicion) "Editar cuidado" else "Registrar cuidado",
+                style = MaterialTheme.typography.titleLarge
+            )
+        }
 
         if (uiState.cargando) {
+            Spacer(modifier = Modifier.height(8.dp))
             CircularProgressIndicator()
             Text("Cargando datos del cuidado...")
         }
 
-        Text("Tipo de cuidado")
+        Etiqueta("Mascota")
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.secondaryContainer
+                    .copy(alpha = 0.4f)
+            )
+        ) {
+            Row(
+                modifier = Modifier.padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                AvatarMascota(uiState.mascotaFotoUri, uiState.mascotaNombre)
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = uiState.mascotaNombre.ifBlank { "Mascota" },
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        }
+
+        Etiqueta("Tipo de cuidado")
         Box {
             OutlinedButton(
                 onClick = { menuTipoAbierto = true },
                 enabled = habilitado,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(tipoSeleccionado?.nombre ?: "Seleccionar tipo de cuidado")
+                Text(
+                    text = tipoSeleccionado?.nombre ?: "Seleccionar tipo de cuidado",
+                    modifier = Modifier.weight(1f)
+                )
+                Icon(
+                    imageVector = Icons.Default.KeyboardArrowDown,
+                    contentDescription = null
+                )
             }
 
             DropdownMenu(
@@ -107,24 +165,26 @@ fun CuidadoFormScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Text("Fecha")
-        Button(
+        Etiqueta("Fecha")
+        OutlinedButton(
             onClick = { mostrarCalendario = true },
             enabled = habilitado,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text(uiState.fecha?.let { formatearFecha(it) } ?: "Seleccionar fecha")
+            Icon(imageVector = Icons.Default.DateRange, contentDescription = null)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = uiState.fecha?.let { formatearFecha(it) } ?: "Seleccionar fecha",
+                modifier = Modifier.weight(1f)
+            )
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
+        Etiqueta("Notas")
         OutlinedTextField(
             value = uiState.notas,
             onValueChange = onNotasChange,
-            label = { Text("Notas (opcional)") },
-            minLines = 2,
+            placeholder = { Text("Opcional") },
+            minLines = 4,
             enabled = habilitado,
             modifier = Modifier.fillMaxWidth()
         )
@@ -137,7 +197,7 @@ fun CuidadoFormScreen(
             )
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
         Button(
             onClick = onGuardar,
@@ -158,15 +218,19 @@ fun CuidadoFormScreen(
             OutlinedButton(
                 onClick = { mostrarConfirmacion = true },
                 enabled = habilitado,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = MaterialTheme.colorScheme.error
+                ),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.error)
             ) {
+                Icon(imageVector = Icons.Default.Delete, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
                 Text("Eliminar cuidado")
             }
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
-
-        OutlinedButton(
+        TextButton(
             onClick = onCancelar,
             enabled = !uiState.guardando,
             modifier = Modifier.fillMaxWidth()
@@ -221,7 +285,7 @@ fun CuidadoFormScreen(
                         onEliminar()
                     }
                 ) {
-                    Text("Eliminar")
+                    Text("Eliminar", color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
@@ -230,6 +294,55 @@ fun CuidadoFormScreen(
                 }
             }
         )
+    }
+}
+
+@Composable
+private fun Etiqueta(texto: String) {
+    Text(
+        text = texto,
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(top = 16.dp, bottom = 4.dp)
+    )
+}
+
+@Composable
+private fun AvatarMascota(fotoUri: String?, nombre: String) {
+    val context = LocalContext.current
+    val bitmap = remember(fotoUri) {
+        fotoUri?.let { direccion ->
+            try {
+                context.contentResolver.openInputStream(Uri.parse(direccion))
+                    ?.use { archivo ->
+                        BitmapFactory.decodeStream(archivo)?.asImageBitmap()
+                    }
+            } catch (e: Exception) {
+                null
+            }
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .size(48.dp)
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.secondaryContainer),
+        contentAlignment = Alignment.Center
+    ) {
+        if (bitmap != null) {
+            Image(
+                bitmap = bitmap,
+                contentDescription = "Fotografía de la mascota",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+        } else {
+            Text(
+                text = nombre.take(1).uppercase(),
+                style = MaterialTheme.typography.titleMedium
+            )
+        }
     }
 }
 

@@ -1,18 +1,38 @@
 package com.am.septimob.petcare.ui.detallemascota
 
+import android.graphics.BitmapFactory
+import android.net.Uri
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -20,11 +40,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.am.septimob.petcare.domain.model.Mascota
 import com.am.septimob.petcare.ui.theme.PetCareTheme
 import java.text.SimpleDateFormat
@@ -42,17 +66,53 @@ fun DetalleMascotaScreen(
     onVolver: () -> Unit
 ) {
     var mostrarConfirmacion by remember { mutableStateOf(false) }
+    var menuAbierto by remember { mutableStateOf(false) }
+
+    val titulo = (uiState as? DetalleMascotaUiState.Success)?.mascota?.nombre ?: "Detalle"
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
-        OutlinedButton(onClick = onVolver) {
-            Text("Volver")
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onVolver) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Volver"
+                )
+            }
+            Text(
+                text = titulo,
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.weight(1f)
+            )
+            if (uiState is DetalleMascotaUiState.Success) {
+                Box {
+                    IconButton(onClick = { menuAbierto = true }) {
+                        Icon(
+                            imageVector = Icons.Default.MoreVert,
+                            contentDescription = "Más opciones"
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = menuAbierto,
+                        onDismissRequest = { menuAbierto = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Eliminar mascota") },
+                            onClick = {
+                                menuAbierto = false
+                                mostrarConfirmacion = true
+                            }
+                        )
+                    }
+                }
+            }
         }
-
-        Spacer(modifier = Modifier.height(16.dp))
 
         when (uiState) {
             is DetalleMascotaUiState.Loading -> {
@@ -66,60 +126,91 @@ fun DetalleMascotaScreen(
             is DetalleMascotaUiState.Success -> {
                 val mascota = uiState.mascota
 
-                Text(
-                    text = mascota.nombre,
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Text("Especie: ${mascota.especie}")
-                Text("Raza: ${mascota.raza}")
-                Text("Sexo: ${mascota.sexo}")
-                Text(
-                    "Nacimiento: " +
-                            (mascota.fechaNacimiento?.let { formatearFecha(it) } ?: "Sin registrar")
-                )
-                Text(
-                    "Peso: " +
-                            (mascota.pesoKg?.let { "$it kg" } ?: "Sin registrar")
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Button(
-                    onClick = onEditarMascota,
-                    modifier = Modifier.fillMaxWidth()
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text("Editar mascota")
-                }
+                    item {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        FotoMascota(mascota.fotoUri, mascota.nombre)
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = mascota.nombre,
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "${mascota.especie} • ${mascota.raza}",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
 
-                OutlinedButton(
-                    onClick = { mostrarConfirmacion = true },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Eliminar mascota")
-                }
+                    item {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer
+                                    .copy(alpha = 0.4f)
+                            )
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text(
+                                    text = "Información",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                FilaInfo(
+                                    "Nacimiento",
+                                    mascota.fechaNacimiento?.let { formatearFecha(it) }
+                                        ?: "Sin registrar"
+                                )
+                                HorizontalDivider()
+                                FilaInfo(
+                                    "Sexo",
+                                    mascota.sexo.ifBlank { "Sin registrar" }
+                                )
+                                HorizontalDivider()
+                                FilaInfo(
+                                    "Peso",
+                                    mascota.pesoKg?.let { "$it kg" } ?: "Sin registrar"
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                    item {
+                        Button(
+                            onClick = onRegistrarCuidado,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(imageVector = Icons.Default.Add, contentDescription = null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Registrar cuidado")
+                        }
+                        TextButton(onClick = onEditarMascota) {
+                            Text("Editar mascota")
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
 
-                Text(
-                    text = "Cuidados",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                    item {
+                        Text(
+                            text = "Cuidados",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
 
-                Button(
-                    onClick = onRegistrarCuidado,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Registrar cuidado")
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                if (uiState.cuidados.isEmpty()) {
-                    Text("Aún no hay cuidados registrados")
-                } else {
-                    LazyColumn {
+                    if (uiState.cuidados.isEmpty()) {
+                        item {
+                            Text("Aún no hay cuidados registrados")
+                        }
+                    } else {
                         items(
                             items = uiState.cuidados,
                             key = { cuidado -> cuidado.id }
@@ -136,9 +227,18 @@ fun DetalleMascotaScreen(
                                 Column(modifier = Modifier.padding(16.dp)) {
                                     Text(
                                         text = cuidado.tipoNombre,
+                                        style = MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.Bold
                                     )
-                                    Text(formatearFecha(cuidado.fecha))
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(
+                                            imageVector = Icons.Default.DateRange,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(formatearFecha(cuidado.fecha))
+                                    }
                                     cuidado.notas?.takeIf { it.isNotBlank() }?.let {
                                         Text(it)
                                     }
@@ -165,7 +265,7 @@ fun DetalleMascotaScreen(
                         onEliminarMascota()
                     }
                 ) {
-                    Text("Eliminar")
+                    Text("Eliminar", color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
@@ -174,6 +274,64 @@ fun DetalleMascotaScreen(
                 }
             }
         )
+    }
+}
+
+@Composable
+private fun FilaInfo(etiqueta: String, valor: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 10.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = etiqueta,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = valor,
+            fontWeight = FontWeight.Medium
+        )
+    }
+}
+
+@Composable
+private fun FotoMascota(fotoUri: String?, nombre: String) {
+    val context = LocalContext.current
+    val bitmap = remember(fotoUri) {
+        fotoUri?.let { direccion ->
+            try {
+                context.contentResolver.openInputStream(Uri.parse(direccion))
+                    ?.use { archivo ->
+                        BitmapFactory.decodeStream(archivo)?.asImageBitmap()
+                    }
+            } catch (e: Exception) {
+                null
+            }
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .size(160.dp)
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.secondaryContainer),
+        contentAlignment = Alignment.Center
+    ) {
+        if (bitmap != null) {
+            Image(
+                bitmap = bitmap,
+                contentDescription = "Fotografía de la mascota",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+        } else {
+            Text(
+                text = nombre.take(1).uppercase(),
+                style = MaterialTheme.typography.displayMedium
+            )
+        }
     }
 }
 

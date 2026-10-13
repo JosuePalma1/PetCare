@@ -4,6 +4,8 @@ import com.am.septimob.petcare.domain.model.TipoCuidado
 
 data class CuidadoFormUiState(
     val id: Long? = null,
+    val mascotaNombre: String = "",
+    val mascotaFotoUri: String? = null,
     val tipoCuidadoId: Long? = null,
     val fecha: Long? = null,
     val notas: String = "",

@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
 import com.am.septimob.petcare.data.repository.CuidadoRepository
+import com.am.septimob.petcare.data.repository.MascotaRepository
 import com.am.septimob.petcare.domain.model.Cuidado
 import com.am.septimob.petcare.ui.navigation.PetCareRoute
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -21,7 +22,8 @@ import javax.inject.Inject
 @HiltViewModel
 class CuidadoFormViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
-    private val repository: CuidadoRepository
+    private val repository: CuidadoRepository,
+    private val mascotaRepository: MascotaRepository
 ) : ViewModel() {
 
     private val ruta = savedStateHandle.toRoute<PetCareRoute.CuidadoForm>()
@@ -38,8 +40,28 @@ class CuidadoFormViewModel @Inject constructor(
 
     init {
         observarTipos()
+        observarMascota()
         // Si la ruta trae cuidadoId, es edición y se cargan los datos
         ruta.cuidadoId?.let(::cargarCuidado)
+    }
+
+    private fun observarMascota() {
+        viewModelScope.launch {
+            try {
+                mascotaRepository.obtenerMascotaPorId(mascotaId).collect { mascota ->
+                    _uiState.update {
+                        it.copy(
+                            mascotaNombre = mascota?.nombre ?: "",
+                            mascotaFotoUri = mascota?.fotoUri
+                        )
+                    }
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                // Si falla, el formulario sigue funcionando sin mostrar la mascota
+            }
+        }
     }
 
     private fun observarTipos() {
