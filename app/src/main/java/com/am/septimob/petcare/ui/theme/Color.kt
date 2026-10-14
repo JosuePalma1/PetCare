@@ -2,10 +2,13 @@ package com.am.septimob.petcare.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
+val PetCareGreen = Color(0xFF0D8278)
+val PetCareGreenLight = Color(0xFFE2F3F0)
+val PetCareGreenDark = Color(0xFF104B47)
+val PetCareGold = Color(0xFFC4872F)
+val PetCareCoral = Color(0xFFB85C45)
+val PetCareBackground = Color(0xFFFCFDFD)
 
-val Purple40 = Color(0xFF6650a4)
-val PurpleGrey40 = Color(0xFF625b71)
-val Pink40 = Color(0xFF7D5260)
+val PetCareGreenDarkTheme = Color(0xFF79D7CC)
+val PetCareGreenContainerDark = Color(0xFF164F4A)
+val PetCareGoldDarkTheme = Color(0xFFE9BD76)

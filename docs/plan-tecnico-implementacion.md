@@ -547,6 +547,8 @@ Esta es la implementación estándar recomendada de Google para combinar `Naviga
 
 - Aplicar visualmente el tema y el orden de las listas en el resto de la app (Configuración ya guarda/lee correctamente con DataStore, que es lo que pide RF10).
 - Pestaña global "Cuidados" en la bottom bar (no especificada en ningún requisito funcional).
-- Casos de uso (`UseCases`) — extra opcional (+0.3 pts), no hay lógica de negocio compleja todavía.
-- Ícono adaptativo vectorizado (+0.3 pts) y `WindowSizeClass` (+0.4 pts) — extras opcionales.
+- Extras opcionales (+1.0 pts en total) — **asignados a Persona A** (ver `docs/PERSONA_D_NAVEGACION_CONFIGURACION.md` §9):
+  - Diseño adaptativo con `WindowSizeClass` (+0.4 pts).
+  - Ícono adaptativo vectorizado propio de PetCare (+0.3 pts).
+  - Capa de dominio con casos de uso (`UseCases`) (+0.3 pts).
 - Modelos de IA on-device — mencionados como posibilidad, no aplica al alcance de este equipo.
