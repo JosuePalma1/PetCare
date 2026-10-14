@@ -4,14 +4,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
-import kotlinx.coroutines.delay
+import androidx.compose.runtime.withFrameNanos
 
 @Composable
 fun SplashRoute(onFinished: () -> Unit) {
     val onFinishedActual by rememberUpdatedState(onFinished)
 
     LaunchedEffect(Unit) {
-        delay(900)
+        // Deja que el Splash se pinte al menos un frame, sin una espera artificial.
+        withFrameNanos { }
         onFinishedActual()
     }
 

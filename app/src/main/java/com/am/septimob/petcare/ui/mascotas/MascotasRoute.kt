@@ -9,6 +9,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 fun MascotasRoute(
     onAgregarMascota: () -> Unit,
     onMascotaClick: (Long) -> Unit,
+    isExpanded: Boolean,
     viewModel: MascotasViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -23,6 +24,7 @@ fun MascotasRoute(
         busqueda = busqueda,
         onBusquedaChange = viewModel::actualizarBusqueda,
         onAgregarMascota = onAgregarMascota,
-        onMascotaClick = onMascotaClick
+        onMascotaClick = onMascotaClick,
+        isExpanded = isExpanded
     )
 }
