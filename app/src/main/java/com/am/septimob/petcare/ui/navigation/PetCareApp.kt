@@ -113,7 +113,7 @@ fun PetCareApp(
 
                 composable<PetCareRoute.Home> {
                     HomeRoute(
-                        onVerMascotasClick = { navController.navigate(PetCareRoute.Mascotas) },
+                        onVerMascotasClick = { navController.seleccionar(pestanas[1]) },
                         isExpanded = usarRail
                     )
                 }
@@ -217,9 +217,9 @@ private fun NavHostController.seleccionar(pestana: PestanaInferior) {
 private fun NavDestination?.esDe(claseRuta: KClass<out PetCareRoute>): Boolean =
     this?.hierarchy?.any { it.hasRoute(claseRuta) } == true
 
-// Evita un doble "atrás" si se pulsa dos veces seguidas: solo vuelve si la pantalla sigue activa
+// Evita un doble "atrás" si se pulsa dos veces seguidas: solo vuelve si la pantalla está activa
 private fun NavHostController.volverDesde(entry: NavBackStackEntry) {
-    if (entry.lifecycle.currentState == Lifecycle.State.RESUMED) {
+    if (entry.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
         popBackStack()
     }
 }
