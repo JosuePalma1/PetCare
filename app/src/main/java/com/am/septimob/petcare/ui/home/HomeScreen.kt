@@ -4,11 +4,14 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
@@ -104,18 +107,22 @@ fun HomeScreen(
 
                 is HomeUiState.Success -> {
                     item {
-                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        // IntrinsicSize.Min + fillMaxHeight: ambas tarjetas toman la altura de la más alta
+                        Row(
+                            modifier = Modifier.height(IntrinsicSize.Min),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
                             ResumenCard(
                                 titulo = "Mascotas",
                                 total = uiState.totalMascotas,
                                 icono = Icons.Default.Pets,
-                                modifier = Modifier.weight(1f)
+                                modifier = Modifier.weight(1f).fillMaxHeight()
                             )
                             ResumenCard(
                                 titulo = "Cuidados\nregistrados",
                                 total = uiState.totalCuidados,
                                 icono = Icons.Default.Favorite,
-                                modifier = Modifier.weight(1f)
+                                modifier = Modifier.weight(1f).fillMaxHeight()
                             )
                         }
                     }
@@ -209,7 +216,7 @@ private fun ResumenCard(
     ) {
         Row(
             modifier = Modifier
-                .fillMaxWidth()
+                .fillMaxSize()
                 .padding(horizontal = 12.dp, vertical = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
