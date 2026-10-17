@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -27,10 +26,11 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -68,7 +68,7 @@ fun MascotasScreen(
             modifier = Modifier
                 .widthIn(max = 1_120.dp)
                 .fillMaxSize()
-                .padding(horizontal = if (isExpanded) 32.dp else 20.dp, vertical = 20.dp),
+                .padding(horizontal = if (isExpanded) 32.dp else 20.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -78,11 +78,6 @@ fun MascotasScreen(
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.weight(1f)
                 )
-                FilledTonalButton(onClick = onAgregarMascota) {
-                    Icon(Icons.Default.Add, contentDescription = null)
-                    Spacer(Modifier.size(6.dp))
-                    Text("Agregar")
-                }
             }
 
             OutlinedTextField(
@@ -91,7 +86,14 @@ fun MascotasScreen(
                 label = { Text("Buscar mascota") },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                shape = CircleShape,
+                colors = OutlinedTextFieldDefaults.colors(
+                    unfocusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                    focusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.primaryContainer,
+                    focusedBorderColor = MaterialTheme.colorScheme.primary
+                )
             )
 
             when (uiState) {
@@ -144,7 +146,7 @@ fun MascotasScreen(
                         LazyVerticalGrid(
                             columns = GridCells.Adaptive(minSize = 340.dp),
                             modifier = Modifier.weight(1f).fillMaxWidth(),
-                            contentPadding = PaddingValues(bottom = 16.dp),
+                            contentPadding = PaddingValues(bottom = 96.dp),
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
@@ -171,6 +173,17 @@ fun MascotasScreen(
                     )
                 }
             }
+        }
+
+        FloatingActionButton(
+            onClick = onAgregarMascota,
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(end = if (isExpanded) 32.dp else 20.dp, bottom = 20.dp),
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary
+        ) {
+            Icon(Icons.Default.Add, contentDescription = "Agregar mascota")
         }
     }
 }

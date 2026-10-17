@@ -8,9 +8,12 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
+import androidx.compose.material3.Shapes
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.unit.dp
 
 private val DarkColorScheme = darkColorScheme(
     primary = PetCareGreenDarkTheme,
@@ -18,7 +21,9 @@ private val DarkColorScheme = darkColorScheme(
     primaryContainer = PetCareGreenContainerDark,
     onPrimaryContainer = PetCareGreenLight,
     secondary = PetCareGoldDarkTheme,
-    tertiary = PetCareCoral
+    tertiary = PetCareCoral,
+    surfaceVariant = PetCareGreenContainerDark,
+    onSurfaceVariant = PetCareGreenLight
 )
 
 private val LightColorScheme = lightColorScheme(
@@ -30,7 +35,21 @@ private val LightColorScheme = lightColorScheme(
     onSecondary = Color.White,
     tertiary = PetCareCoral,
     background = PetCareBackground,
-    surface = PetCareBackground
+    surface = Color.White,
+    surfaceVariant = PetCareSurfaceVariant,
+    onSurfaceVariant = PetCareSlate,
+    secondaryContainer = PetCareGreenLight,
+    onSecondaryContainer = PetCareGreenDark,
+    outline = PetCareOutline,
+    outlineVariant = PetCareOutline
+)
+
+private val PetCareShapes = Shapes(
+    extraSmall = RoundedCornerShape(8.dp),
+    small = RoundedCornerShape(14.dp),
+    medium = RoundedCornerShape(20.dp),
+    large = RoundedCornerShape(26.dp),
+    extraLarge = RoundedCornerShape(32.dp)
 )
 
 @Composable
@@ -53,6 +72,7 @@ fun PetCareTheme(
     MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography,
+        shapes = PetCareShapes,
         content = content
     )
 }
