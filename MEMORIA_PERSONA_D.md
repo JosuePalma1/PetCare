@@ -184,3 +184,21 @@ avisarle para que no duplique trabajo.
 - **2026-10-11** — Commit del `2.json` de Room (B subió `1.json` en `d1189dc`; C subió a v2 sin el json).
   PR pospuesto hasta que A termine. Mientras tanto, todo el equipo debe partir de mi rama: A crea su rama desde
   `feature/persona-d-navegacion-configuracion`; B y C hacen sus arreglos ahí o en ramas nuevas desde ella.
+- **2026-10-17** — `main` ya incluye todo (PR #1 de A fusionado el 14/10 + 2 commits de A el 16/10). Pull a `main` local.
+  Revisión de lo nuevo y arreglos (sin commit aún, para rama nueva desde `main`):
+  1. `HomeViewModel` ahora usa `ObtenerCantidadMascotasUseCase` (antes nadie lo usaba → el extra no contaba).
+  2. `volverDesde` pasó de `RESUMED` a `isAtLeast(STARTED)` (Josué, 42eda7c): seguro, la entrada que sale queda en
+     CREATED durante la animación. **Probado**: doble toque en ← de Detalle solo saca una pantalla.
+  3. Home sin mascotas: "Registrar mascota" abre `MascotaForm` (nuevo `onRegistrarMascotaClick`); con mascotas sigue
+     yendo a la pestaña Mascotas.
+  4. Detalle: "Gato • " sin raza → `filter { isNotBlank }.joinToString(" • ")`.
+  5. Fotos: helper `ui/components/FotoMascota.kt` → `rememberFotoMascota(uri, tamano)` (inSampleSize + Dispatchers.IO)
+     reemplaza 4 copias de `BitmapFactory.decodeStream` a tamaño completo.
+  6. Tema: `MainActivity` no pinta hasta leer DataStore (initialValue null) → sin parpadeo claro→oscuro. Además
+     `PreferenciasRepositoryImpl` hace `catch(IOException) → emptyPreferences()`.
+  7. `docs/PERSONA_A_SPLASH_HOME.md` corregido (800 ms, Use Case, sin "dos paneles", actividad reciente real).
+  8. Borrado `docs/MEMORIA_PERSONA_D.md` de main (lo subió A en 7df9dfb).
+  Build + 6 tests + lint OK (lint 21→16 avisos, 0 errores). Probado en emulador: Home vacío, registrar desde Home,
+  contador, detalle sin raza, doble atrás, tema oscuro persiste tras force-stop.
+  Pendiente/observado: en oscuro los iconos de la barra de estado quedan oscuros (enableEdgeToEdge sigue al sistema,
+  no a la preferencia); el splash del sistema (Android 12+) siempre es claro.
