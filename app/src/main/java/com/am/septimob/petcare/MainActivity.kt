@@ -1,11 +1,14 @@
 package com.am.septimob.petcare
 
+import android.graphics.Color
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.am.septimob.petcare.data.repository.PreferenciasRepository
@@ -32,7 +35,16 @@ class MainActivity : ComponentActivity() {
                 .collectAsStateWithLifecycle<UserPreferences?>(initialValue = null)
 
             preferencias?.let { actuales ->
-                PetCareTheme(darkTheme = actuales.tema == Tema.OSCURO) {
+                val oscuro = actuales.tema == Tema.OSCURO
+
+                // enableEdgeToEdge() por defecto sigue el tema del sistema; aquí los iconos de las barras
+                // del sistema siguen el tema elegido en Ajustes (si no, quedan oscuros sobre fondo oscuro)
+                LaunchedEffect(oscuro) {
+                    val estilo = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT) { oscuro }
+                    enableEdgeToEdge(statusBarStyle = estilo, navigationBarStyle = estilo)
+                }
+
+                PetCareTheme(darkTheme = oscuro) {
                     PetCareApp(windowSizeClass = windowSizeClass)
                 }
             }

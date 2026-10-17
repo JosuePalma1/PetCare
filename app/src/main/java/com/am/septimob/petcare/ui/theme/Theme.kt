@@ -21,6 +21,9 @@ private val DarkColorScheme = darkColorScheme(
     primaryContainer = PetCareGreenContainerDark,
     onPrimaryContainer = PetCareGreenLight,
     secondary = PetCareGoldDarkTheme,
+    // Sin estos, Material usa su morado por defecto (indicador de la barra inferior, avatares)
+    secondaryContainer = PetCareGreenContainerDark,
+    onSecondaryContainer = PetCareGreenLight,
     tertiary = PetCareCoral,
     surfaceVariant = PetCareGreenContainerDark,
     onSurfaceVariant = PetCareGreenLight
