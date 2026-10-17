@@ -139,7 +139,7 @@ fun DetalleMascotaScreen(
                         Text(
                             text = listOf(mascota.especie, mascota.raza)
                                 .filter { it.isNotBlank() }
-                                .joinToString(" • "),
+                                .joinToString(" · "),
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.height(16.dp))

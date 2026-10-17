@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.first
 import androidx.navigation.toRoute
 import com.am.septimob.petcare.ui.navigation.PetCareRoute
+import com.am.septimob.petcare.ui.components.hoyEnDias
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
@@ -133,6 +134,13 @@ class MascotaFormViewModel @Inject constructor(
         if (estado.especie.isBlank()) {
             _uiState.value = estado.copy(
                 error = "Debes seleccionar una especie"
+            )
+            return false
+        }
+
+        if ((estado.fechaNacimiento ?: 0) > hoyEnDias()) {
+            _uiState.value = estado.copy(
+                error = "La fecha de nacimiento no puede ser futura"
             )
             return false
         }
