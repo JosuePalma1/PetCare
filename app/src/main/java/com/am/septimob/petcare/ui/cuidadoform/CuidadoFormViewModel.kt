@@ -8,6 +8,7 @@ import com.am.septimob.petcare.data.repository.CuidadoRepository
 import com.am.septimob.petcare.data.repository.MascotaRepository
 import com.am.septimob.petcare.domain.model.Cuidado
 import com.am.septimob.petcare.ui.navigation.PetCareRoute
+import com.am.septimob.petcare.ui.components.hoyEnDias
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.Channel
@@ -16,12 +17,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.util.TimeZone
 import javax.inject.Inject
 
 @HiltViewModel
 class CuidadoFormViewModel @Inject constructor(
-    savedStateHandle: SavedStateHandle,
+    private val savedStateHandle: SavedStateHandle,
     private val repository: CuidadoRepository,
     private val mascotaRepository: MascotaRepository
 ) : ViewModel() {
@@ -29,7 +29,14 @@ class CuidadoFormViewModel @Inject constructor(
     private val ruta = savedStateHandle.toRoute<PetCareRoute.CuidadoForm>()
     private val mascotaId: Long = ruta.mascotaId
 
-    private val _uiState = MutableStateFlow(CuidadoFormUiState(fecha = hoyEnDias()))
+    // Lo que el usuario ya eligió sobrevive a la muerte del proceso (el sistema cierra la app en segundo plano)
+    private val _uiState = MutableStateFlow(
+        CuidadoFormUiState(
+            tipoCuidadoId = savedStateHandle[CLAVE_TIPO],
+            fecha = savedStateHandle[CLAVE_FECHA] ?: hoyEnDias(),
+            notas = savedStateHandle[CLAVE_NOTAS] ?: ""
+        )
+    )
     val uiState: StateFlow<CuidadoFormUiState> = _uiState
 
     // Avisa cuando se guardó o eliminó un cuidado
@@ -81,14 +88,17 @@ class CuidadoFormViewModel @Inject constructor(
     }
 
     fun actualizarTipo(tipoCuidadoId: Long) {
+        savedStateHandle[CLAVE_TIPO] = tipoCuidadoId
         _uiState.update { it.copy(tipoCuidadoId = tipoCuidadoId, error = null) }
     }
 
     fun actualizarFecha(fecha: Long?) {
+        savedStateHandle[CLAVE_FECHA] = fecha
         _uiState.update { it.copy(fecha = fecha, error = null) }
     }
 
     fun actualizarNotas(notas: String) {
+        savedStateHandle[CLAVE_NOTAS] = notas
         _uiState.update { it.copy(notas = notas) }
     }
 
@@ -116,9 +126,10 @@ class CuidadoFormViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         id = cuidado.id,
-                        tipoCuidadoId = cuidado.tipoCuidadoId,
-                        fecha = cuidado.fecha,
-                        notas = cuidado.notas ?: "",
+                        // Si el usuario ya había cambiado algo antes de que se cerrara el proceso, se respeta
+                        tipoCuidadoId = savedStateHandle[CLAVE_TIPO] ?: cuidado.tipoCuidadoId,
+                        fecha = savedStateHandle[CLAVE_FECHA] ?: cuidado.fecha,
+                        notas = savedStateHandle[CLAVE_NOTAS] ?: cuidado.notas ?: "",
                         cargando = false
                     )
                 }
@@ -204,9 +215,6 @@ class CuidadoFormViewModel @Inject constructor(
     }
 }
 
-// Fecha de hoy como "días desde 1970", igual que fechaNacimiento de Mascota
-private fun hoyEnDias(): Long {
-    val ahora = System.currentTimeMillis()
-    val local = ahora + TimeZone.getDefault().getOffset(ahora)
-    return Math.floorDiv(local, 86_400_000L)
-}
+private const val CLAVE_TIPO = "cuidado_tipo"
+private const val CLAVE_FECHA = "cuidado_fecha"
+private const val CLAVE_NOTAS = "cuidado_notas"
