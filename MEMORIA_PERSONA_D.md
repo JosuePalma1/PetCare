@@ -202,3 +202,5 @@ avisarle para que no duplique trabajo.
   contador, detalle sin raza, doble atrás, tema oscuro persiste tras force-stop.
   Pendiente/observado: en oscuro los iconos de la barra de estado quedan oscuros (enableEdgeToEdge sigue al sistema,
   no a la preferencia); el splash del sistema (Android 12+) siempre es claro.
+- **2026-10-17** — PR #2 abierto (`fix/persona-d-revision-main` → `main`, 4 commits, MERGEABLE, sin revisores ni CI).
+  https://github.com/JosuePalma1/PetCare/pull/2 — falta probar mascota con foto grande; avisar a A/B/C que hagan pull tras el merge.
