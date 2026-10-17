@@ -1,7 +1,5 @@
 package com.am.septimob.petcare.ui.detallemascota
 
-import android.graphics.BitmapFactory
-import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -43,14 +41,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.am.septimob.petcare.domain.model.Mascota
 import com.am.septimob.petcare.ui.theme.PetCareTheme
+import com.am.septimob.petcare.ui.components.rememberFotoMascota
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -140,7 +137,9 @@ fun DetalleMascotaScreen(
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "${mascota.especie} • ${mascota.raza}",
+                            text = listOf(mascota.especie, mascota.raza)
+                                .filter { it.isNotBlank() }
+                                .joinToString(" • "),
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.height(16.dp))
@@ -298,19 +297,7 @@ private fun FilaInfo(etiqueta: String, valor: String) {
 
 @Composable
 private fun FotoMascota(fotoUri: String?, nombre: String) {
-    val context = LocalContext.current
-    val bitmap = remember(fotoUri) {
-        fotoUri?.let { direccion ->
-            try {
-                context.contentResolver.openInputStream(Uri.parse(direccion))
-                    ?.use { archivo ->
-                        BitmapFactory.decodeStream(archivo)?.asImageBitmap()
-                    }
-            } catch (e: Exception) {
-                null
-            }
-        }
-    }
+    val bitmap = rememberFotoMascota(fotoUri, tamano = 160.dp)
 
     Box(
         modifier = Modifier

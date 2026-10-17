@@ -1,7 +1,5 @@
 package com.am.septimob.petcare.ui.mascotaform
 
-import android.graphics.BitmapFactory
-import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -38,7 +36,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
@@ -46,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import com.am.septimob.petcare.ui.components.rememberFotoMascota
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -85,19 +83,7 @@ fun MascotaFormScreen(
         }
     }
 
-    val fotoBitmap = remember(uiState.fotoUri) {
-        uiState.fotoUri?.let { direccion ->
-            try {
-                context.contentResolver.openInputStream(
-                    Uri.parse(direccion)
-                )?.use { archivo ->
-                    BitmapFactory.decodeStream(archivo)?.asImageBitmap()
-                }
-            } catch (e: Exception) {
-                null
-            }
-        }
-    }
+    val fotoBitmap = rememberFotoMascota(uiState.fotoUri, tamano = 120.dp)
 
     LaunchedEffect(uiState.fechaNacimiento) {
         fechaNacimiento = uiState.fechaNacimiento?.let { dias ->

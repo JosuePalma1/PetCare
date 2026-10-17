@@ -1,7 +1,5 @@
 package com.am.septimob.petcare.ui.mascotas
 
-import android.graphics.BitmapFactory
-import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -34,17 +32,15 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.am.septimob.petcare.domain.model.Mascota
+import com.am.septimob.petcare.ui.components.rememberFotoMascota
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -251,18 +247,7 @@ private fun MascotaCard(mascota: Mascota, onClick: () -> Unit) {
 
 @Composable
 private fun FotoMascota(fotoUri: String?) {
-    val context = LocalContext.current
-    val bitmap = remember(fotoUri, context) {
-        fotoUri?.let { direccion ->
-            try {
-                context.contentResolver.openInputStream(Uri.parse(direccion))?.use { archivo ->
-                    BitmapFactory.decodeStream(archivo)?.asImageBitmap()
-                }
-            } catch (_: Exception) {
-                null
-            }
-        }
-    }
+    val bitmap = rememberFotoMascota(fotoUri, tamano = 88.dp)
 
     Surface(
         modifier = Modifier.size(88.dp),
