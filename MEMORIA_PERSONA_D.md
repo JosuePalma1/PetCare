@@ -222,3 +222,10 @@ avisarle para que no duplique trabajo.
   preferencia (enableEdgeToEdge + SystemBarStyle.auto en LaunchedEffect), MascotaForm con flecha/ancho completo/
   sexo seleccionable/diálogo "¿Descartar cambios?", CuidadoForm guarda tipo/fecha/notas en SavedStateHandle,
   separador "·" unificado, `ui/components/Fechas.kt` con `hoyEnDias()` compartido. Todo verificado en emulador.
+- **2026-10-17** — Rúbrica revisada (PDF del profe): los 5 criterios cumplen. **Correo**: el real es
+  `e1315644771@...` (con e); con el de sin "e" GitHub no vincula 31 commits → usuario intenta verificarlo en GitHub;
+  si no, plan B = reescribir autor solo del PR #2. Config local ya corregida.
+  Mejoras para extras: `GuardarMascotaUseCase` (operator invoke: valida + normaliza + inserta/actualiza; recibe
+  `hoyEnDias` por parámetro) usado por MascotaFormViewModel + 8 tests con repositorio falso; Detalle en 2 columnas con
+  rail (`LazyListScope.perfilMascota/historialCuidados`); `visibleEntries.collectAsStateWithLifecycle()`; borrado
+  colors.xml de la plantilla (lint 16→10). Probado en emulador.
