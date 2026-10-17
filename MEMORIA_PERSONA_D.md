@@ -207,3 +207,18 @@ avisarle para que no duplique trabajo.
 - **2026-10-17** — PR #2 + tarjetas de resumen con igual altura (IntrinsicSize.Min) y fix del solape Splash/barra:
   la barra se decide con `navController.visibleEntries` (todas las visibles deben ser pestañas) y Splash→Inicio sin fundido.
   Verificado con ráfagas de screencap en 4 arranques: 0 frames con Splash + barra.
+- **2026-10-17** — Recorrido completo en emulador (light/dark, vertical/horizontal, muerte de proceso) + Logcat.
+  OK: CRUD mascotas y cuidados, validaciones (nombre vacío/espacios, peso negativo, tipo de cuidado), foto 4000x3000,
+  búsqueda sin mayúsculas, CASCADE en BD, rail + grid en horizontal, ajustes persisten, back stack tras process death.
+  0 crashes/excepciones de la app (los "Skipped frames" son de arranques en frío en debug).
+  Hallazgos: (1) orden de mascotas/historial de Ajustes no se aplica en ninguna pantalla; (2) búsqueda " " muestra
+  "Aún no tienes mascotas" (filtro sin trim); (3) fecha de nacimiento futura aceptada; (4) dark sin secondaryContainer
+  → avatar del detalle e indicador de la barra en morado; (5) iconos de status bar oscuros en dark; (6) label
+  Macho/Hembra no seleccionable; (7) MascotaForm sin flecha atrás, campos de ancho fijo y atrás descarta sin aviso;
+  (8) ORDER BY nombre sensible a mayúsculas; (9) tipo de cuidado se pierde tras process death; (10) "•" vs "·".
+- **2026-10-17** — Arreglados los 10 hallazgos del recorrido (sin commit aún, en `fix/persona-d-revision-main`):
+  orden de Ajustes aplicado (lista con Collator / id desc; historial por fecha+id), búsqueda con trim, fecha de
+  nacimiento futura bloqueada (SelectableDates + validación), dark `secondaryContainer`, status bar sigue la
+  preferencia (enableEdgeToEdge + SystemBarStyle.auto en LaunchedEffect), MascotaForm con flecha/ancho completo/
+  sexo seleccionable/diálogo "¿Descartar cambios?", CuidadoForm guarda tipo/fecha/notas en SavedStateHandle,
+  separador "·" unificado, `ui/components/Fechas.kt` con `hoyEnDias()` compartido. Todo verificado en emulador.
