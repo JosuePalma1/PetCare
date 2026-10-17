@@ -114,6 +114,9 @@ fun PetCareApp(
                 composable<PetCareRoute.Home> {
                     HomeRoute(
                         onVerMascotasClick = { navController.seleccionar(pestanas[1]) },
+                        onRegistrarMascotaClick = {
+                            navController.navigate(PetCareRoute.MascotaForm())
+                        },
                         isExpanded = usarRail
                     )
                 }

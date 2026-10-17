@@ -50,8 +50,9 @@ import java.util.TimeZone
 fun HomeScreen(
     uiState: HomeUiState,
     onVerMascotasClick: () -> Unit,
-    isExpanded: Boolean = false,
-    modifier: Modifier = Modifier
+    onRegistrarMascotaClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    isExpanded: Boolean = false
 ) {
     Box(
         modifier = modifier.fillMaxSize(),
@@ -122,7 +123,12 @@ fun HomeScreen(
                     item {
                         RegistrarCuidadoCard(
                             totalMascotas = uiState.totalMascotas,
-                            onClick = onVerMascotasClick
+                            // Sin mascotas no hay a quién registrarle un cuidado: se abre el formulario
+                            onClick = if (uiState.totalMascotas == 0) {
+                                onRegistrarMascotaClick
+                            } else {
+                                onVerMascotasClick
+                            }
                         )
                     }
 
