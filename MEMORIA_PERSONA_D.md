@@ -204,3 +204,6 @@ avisarle para que no duplique trabajo.
   no a la preferencia); el splash del sistema (Android 12+) siempre es claro.
 - **2026-10-17** — PR #2 abierto (`fix/persona-d-revision-main` → `main`, 4 commits, MERGEABLE, sin revisores ni CI).
   https://github.com/JosuePalma1/PetCare/pull/2 — falta probar mascota con foto grande; avisar a A/B/C que hagan pull tras el merge.
+- **2026-10-17** — PR #2 + tarjetas de resumen con igual altura (IntrinsicSize.Min) y fix del solape Splash/barra:
+  la barra se decide con `navController.visibleEntries` (todas las visibles deben ser pestañas) y Splash→Inicio sin fundido.
+  Verificado con ráfagas de screencap en 4 arranques: 0 frames con Splash + barra.
