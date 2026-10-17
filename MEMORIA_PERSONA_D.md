@@ -229,3 +229,8 @@ avisarle para que no duplique trabajo.
   `hoyEnDias` por parámetro) usado por MascotaFormViewModel + 8 tests con repositorio falso; Detalle en 2 columnas con
   rail (`LazyListScope.perfilMascota/historialCuidados`); `visibleEntries.collectAsStateWithLifecycle()`; borrado
   colors.xml de la plantilla (lint 16→10). Probado en emulador.
+- **2026-10-17** — Autor de los 13 commits del PR #2 corregido al correo con "e" (rebase --exec con
+  GIT_COMMITTER_DATE = fecha de autor, en Git Bash; en PowerShell no conserva la fecha de commit) + force-with-lease.
+  **PR #2 fusionado** (merge b933130, por DumarMatamoros). main local actualizado; compila y 14/14 tests OK.
+  Rama `fix/persona-d-revision-main` se conserva como evidencia. Los 10 commits sin "e" que ya estaban en main
+  (feature/persona-d) quedan sin vincular: no se reescribe main.
