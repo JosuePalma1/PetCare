@@ -27,12 +27,14 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             val windowSizeClass = calculateWindowSizeClass(this@MainActivity)
-            val preferencias by preferenciasRepository.preferencias.collectAsStateWithLifecycle(
-                initialValue = UserPreferences()
-            )
+            // null hasta leer DataStore: así no se pinta un instante en claro si el usuario eligió oscuro
+            val preferencias by preferenciasRepository.preferencias
+                .collectAsStateWithLifecycle<UserPreferences?>(initialValue = null)
 
-            PetCareTheme(darkTheme = preferencias.tema == Tema.OSCURO) {
-                PetCareApp(windowSizeClass = windowSizeClass)
+            preferencias?.let { actuales ->
+                PetCareTheme(darkTheme = actuales.tema == Tema.OSCURO) {
+                    PetCareApp(windowSizeClass = windowSizeClass)
+                }
             }
         }
     }

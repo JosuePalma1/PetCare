@@ -3,13 +3,16 @@ package com.am.septimob.petcare.data.repository
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.am.septimob.petcare.domain.model.OrdenHistorial
 import com.am.septimob.petcare.domain.model.OrdenMascotas
 import com.am.septimob.petcare.domain.model.Tema
 import com.am.septimob.petcare.domain.model.UserPreferences
+import java.io.IOException
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 
 class PreferenciasRepositoryImpl @Inject constructor(
@@ -24,13 +27,16 @@ class PreferenciasRepositoryImpl @Inject constructor(
 
     private val valoresPorDefecto = UserPreferences()
 
-    override val preferencias: Flow<UserPreferences> = dataStore.data.map { prefs ->
-        UserPreferences(
-            tema = prefs[Claves.TEMA].toEnumOr(valoresPorDefecto.tema),
-            ordenMascotas = prefs[Claves.ORDEN_MASCOTAS].toEnumOr(valoresPorDefecto.ordenMascotas),
-            ordenHistorial = prefs[Claves.ORDEN_HISTORIAL].toEnumOr(valoresPorDefecto.ordenHistorial)
-        )
-    }
+    override val preferencias: Flow<UserPreferences> = dataStore.data
+        // Archivo ilegible: se usan los valores por defecto en vez de cerrar la app
+        .catch { e -> if (e is IOException) emit(emptyPreferences()) else throw e }
+        .map { prefs ->
+            UserPreferences(
+                tema = prefs[Claves.TEMA].toEnumOr(valoresPorDefecto.tema),
+                ordenMascotas = prefs[Claves.ORDEN_MASCOTAS].toEnumOr(valoresPorDefecto.ordenMascotas),
+                ordenHistorial = prefs[Claves.ORDEN_HISTORIAL].toEnumOr(valoresPorDefecto.ordenHistorial)
+            )
+        }
 
     override suspend fun actualizarTema(tema: Tema) {
         dataStore.edit { it[Claves.TEMA] = tema.name }
