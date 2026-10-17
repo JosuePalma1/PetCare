@@ -15,6 +15,7 @@ fun DetalleMascotaRoute(
     onCuidadoClick: (Long) -> Unit,
     onMascotaEliminada: () -> Unit,
     onVolver: () -> Unit,
+    isExpanded: Boolean,
     viewModel: DetalleMascotaViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -36,6 +37,7 @@ fun DetalleMascotaRoute(
         onEliminarMascota = viewModel::eliminarMascota,
         onRegistrarCuidado = onRegistrarCuidado,
         onCuidadoClick = onCuidadoClick,
-        onVolver = onVolver
+        onVolver = onVolver,
+        isExpanded = isExpanded
     )
 }

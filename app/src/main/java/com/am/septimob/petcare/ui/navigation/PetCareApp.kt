@@ -23,11 +23,11 @@ import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSiz
 import androidx.compose.material3.windowsizeclass.WindowSizeClass
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hasRoute
@@ -75,7 +75,7 @@ fun PetCareApp(
     val destinoActual = backStackEntry?.destination
     // La barra se basa en lo que el NavHost está dibujando, no solo en la ruta actual: así no aparece
     // encima de una pantalla que aún se está yendo (p. ej. el último frame del Splash)
-    val entradasVisibles by navController.visibleEntries.collectAsState()
+    val entradasVisibles by navController.visibleEntries.collectAsStateWithLifecycle()
     val mostrarNavegacion = entradasVisibles.isNotEmpty() && entradasVisibles.all { entrada ->
         pestanas.any { entrada.destination.esDe(it.claseRuta) }
     }
@@ -172,7 +172,8 @@ fun PetCareApp(
                         onMascotaEliminada = {
                             navController.popBackStack<PetCareRoute.Mascotas>(inclusive = false)
                         },
-                        onVolver = { navController.volverDesde(entry) }
+                        onVolver = { navController.volverDesde(entry) },
+                        isExpanded = usarRail
                     )
                 }
 
