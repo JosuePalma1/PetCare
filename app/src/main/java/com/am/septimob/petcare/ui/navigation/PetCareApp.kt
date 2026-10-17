@@ -1,5 +1,7 @@
 package com.am.septimob.petcare.ui.navigation
 
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -25,6 +27,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hasRoute
@@ -70,7 +73,12 @@ fun PetCareApp(
 ) {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val destinoActual = backStackEntry?.destination
-    val mostrarNavegacion = pestanas.any { destinoActual.esDe(it.claseRuta) }
+    // La barra se basa en lo que el NavHost está dibujando, no solo en la ruta actual: así no aparece
+    // encima de una pantalla que aún se está yendo (p. ej. el último frame del Splash)
+    val entradasVisibles by navController.visibleEntries.collectAsStateWithLifecycle()
+    val mostrarNavegacion = entradasVisibles.isNotEmpty() && entradasVisibles.all { entrada ->
+        pestanas.any { entrada.destination.esDe(it.claseRuta) }
+    }
     val usarRail = windowSizeClass.widthSizeClass != WindowWidthSizeClass.Compact
 
     Scaffold(
@@ -101,7 +109,8 @@ fun PetCareApp(
                     .fillMaxHeight()
                     .imePadding()
             ) {
-                composable<PetCareRoute.Splash> {
+                // Splash → Inicio sin fundido: si no, el Splash se ve un instante con la barra inferior encima
+                composable<PetCareRoute.Splash>(exitTransition = { ExitTransition.None }) {
                     SplashRoute(
                         onFinished = {
                             navController.navigate(PetCareRoute.Home) {
@@ -111,9 +120,20 @@ fun PetCareApp(
                     )
                 }
 
-                composable<PetCareRoute.Home> {
+                composable<PetCareRoute.Home>(
+                    enterTransition = {
+                        if (initialState.destination.hasRoute(PetCareRoute.Splash::class)) {
+                            EnterTransition.None
+                        } else {
+                            null
+                        }
+                    }
+                ) {
                     HomeRoute(
                         onVerMascotasClick = { navController.seleccionar(pestanas[1]) },
+                        onRegistrarMascotaClick = {
+                            navController.navigate(PetCareRoute.MascotaForm())
+                        },
                         isExpanded = usarRail
                     )
                 }
@@ -152,7 +172,8 @@ fun PetCareApp(
                         onMascotaEliminada = {
                             navController.popBackStack<PetCareRoute.Mascotas>(inclusive = false)
                         },
-                        onVolver = { navController.volverDesde(entry) }
+                        onVolver = { navController.volverDesde(entry) },
+                        isExpanded = usarRail
                     )
                 }
 

@@ -1,7 +1,5 @@
 package com.am.septimob.petcare.ui.cuidadoform
 
-import android.graphics.BitmapFactory
-import android.net.Uri
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -51,15 +49,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
+import com.am.septimob.petcare.ui.components.rememberFotoMascota
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -309,19 +306,7 @@ private fun Etiqueta(texto: String) {
 
 @Composable
 private fun AvatarMascota(fotoUri: String?, nombre: String) {
-    val context = LocalContext.current
-    val bitmap = remember(fotoUri) {
-        fotoUri?.let { direccion ->
-            try {
-                context.contentResolver.openInputStream(Uri.parse(direccion))
-                    ?.use { archivo ->
-                        BitmapFactory.decodeStream(archivo)?.asImageBitmap()
-                    }
-            } catch (e: Exception) {
-                null
-            }
-        }
-    }
+    val bitmap = rememberFotoMascota(fotoUri, tamano = 48.dp)
 
     Box(
         modifier = Modifier

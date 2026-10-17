@@ -1,10 +1,9 @@
 package com.am.septimob.petcare.ui.detallemascota
 
-import android.graphics.BitmapFactory
-import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -16,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -43,14 +43,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.am.septimob.petcare.domain.model.Mascota
 import com.am.septimob.petcare.ui.theme.PetCareTheme
+import com.am.septimob.petcare.ui.components.rememberFotoMascota
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -63,7 +62,8 @@ fun DetalleMascotaScreen(
     onEliminarMascota: () -> Unit,
     onRegistrarCuidado: () -> Unit,
     onCuidadoClick: (Long) -> Unit,
-    onVolver: () -> Unit
+    onVolver: () -> Unit,
+    isExpanded: Boolean = false
 ) {
     var mostrarConfirmacion by remember { mutableStateOf(false) }
     var menuAbierto by remember { mutableStateOf(false) }
@@ -126,125 +126,29 @@ fun DetalleMascotaScreen(
             is DetalleMascotaUiState.Success -> {
                 val mascota = uiState.mascota
 
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    item {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        FotoMascota(mascota.fotoUri, mascota.nombre)
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Text(
-                            text = mascota.nombre,
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = "${mascota.especie} • ${mascota.raza}",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                    }
-
-                    item {
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.secondaryContainer
-                                    .copy(alpha = 0.4f)
-                            )
+                if (isExpanded) {
+                    // Pantalla amplia: perfil a la izquierda y historial a la derecha, cada uno con su scroll
+                    Row(
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalArrangement = Arrangement.spacedBy(24.dp)
+                    ) {
+                        LazyColumn(
+                            modifier = Modifier.weight(1f).fillMaxHeight(),
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                Text(
-                                    text = "Información",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                                FilaInfo(
-                                    "Nacimiento",
-                                    mascota.fechaNacimiento?.let { formatearFecha(it) }
-                                        ?: "Sin registrar"
-                                )
-                                HorizontalDivider()
-                                FilaInfo(
-                                    "Sexo",
-                                    mascota.sexo.ifBlank { "Sin registrar" }
-                                )
-                                HorizontalDivider()
-                                FilaInfo(
-                                    "Peso",
-                                    mascota.pesoKg?.let { "$it kg" } ?: "Sin registrar"
-                                )
-                            }
+                            perfilMascota(mascota, onRegistrarCuidado, onEditarMascota)
                         }
-                        Spacer(modifier = Modifier.height(16.dp))
+                        LazyColumn(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                            historialCuidados(uiState.cuidados, onCuidadoClick)
+                        }
                     }
-
-                    item {
-                        Button(
-                            onClick = onRegistrarCuidado,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Icon(imageVector = Icons.Default.Add, contentDescription = null)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Registrar cuidado")
-                        }
-                        TextButton(onClick = onEditarMascota) {
-                            Text("Editar mascota")
-                        }
-                        Spacer(modifier = Modifier.height(8.dp))
-                    }
-
-                    item {
-                        Text(
-                            text = "Cuidados",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                    }
-
-                    if (uiState.cuidados.isEmpty()) {
-                        item {
-                            Text("Aún no hay cuidados registrados")
-                        }
-                    } else {
-                        items(
-                            items = uiState.cuidados,
-                            key = { cuidado -> cuidado.id }
-                        ) { cuidado ->
-                            Card(
-                                onClick = { onCuidadoClick(cuidado.id) },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 6.dp),
-                                elevation = CardDefaults.cardElevation(
-                                    defaultElevation = 2.dp
-                                )
-                            ) {
-                                Column(modifier = Modifier.padding(16.dp)) {
-                                    Text(
-                                        text = cuidado.tipoNombre,
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(
-                                            imageVector = Icons.Default.DateRange,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(16.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(6.dp))
-                                        Text(formatearFecha(cuidado.fecha))
-                                    }
-                                    cuidado.notas?.takeIf { it.isNotBlank() }?.let {
-                                        Text(it)
-                                    }
-                                }
-                            }
-                        }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        perfilMascota(mascota, onRegistrarCuidado, onEditarMascota)
+                        historialCuidados(uiState.cuidados, onCuidadoClick)
                     }
                 }
             }
@@ -277,6 +181,136 @@ fun DetalleMascotaScreen(
     }
 }
 
+private fun LazyListScope.perfilMascota(
+    mascota: Mascota,
+    onRegistrarCuidado: () -> Unit,
+    onEditarMascota: () -> Unit
+) {
+    item {
+        Spacer(modifier = Modifier.height(8.dp))
+        FotoMascota(mascota.fotoUri, mascota.nombre)
+        Spacer(modifier = Modifier.height(12.dp))
+        Text(
+            text = mascota.nombre,
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold
+        )
+        Text(
+            text = listOf(mascota.especie, mascota.raza)
+                .filter { it.isNotBlank() }
+                .joinToString(" · "),
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+    }
+
+    item {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.secondaryContainer
+                    .copy(alpha = 0.4f)
+            )
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "Información",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                FilaInfo(
+                    "Nacimiento",
+                    mascota.fechaNacimiento?.let { formatearFecha(it) }
+                        ?: "Sin registrar"
+                )
+                HorizontalDivider()
+                FilaInfo(
+                    "Sexo",
+                    mascota.sexo.ifBlank { "Sin registrar" }
+                )
+                HorizontalDivider()
+                FilaInfo(
+                    "Peso",
+                    mascota.pesoKg?.let { "$it kg" } ?: "Sin registrar"
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+    }
+
+    item {
+        Button(
+            onClick = onRegistrarCuidado,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Icon(imageVector = Icons.Default.Add, contentDescription = null)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Registrar cuidado")
+        }
+        TextButton(onClick = onEditarMascota) {
+            Text("Editar mascota")
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+    }
+}
+
+private fun LazyListScope.historialCuidados(
+    cuidados: List<CuidadoItem>,
+    onCuidadoClick: (Long) -> Unit
+) {
+    item {
+        Text(
+            text = "Cuidados",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+    }
+
+    if (cuidados.isEmpty()) {
+        item {
+            Text("Aún no hay cuidados registrados")
+        }
+    } else {
+        items(
+            items = cuidados,
+            key = { cuidado -> cuidado.id }
+        ) { cuidado ->
+            Card(
+                onClick = { onCuidadoClick(cuidado.id) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 6.dp),
+                elevation = CardDefaults.cardElevation(
+                    defaultElevation = 2.dp
+                )
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = cuidado.tipoNombre,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.DateRange,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(formatearFecha(cuidado.fecha))
+                    }
+                    cuidado.notas?.takeIf { it.isNotBlank() }?.let {
+                        Text(it)
+                    }
+                }
+            }
+        }
+    }
+}
+
 @Composable
 private fun FilaInfo(etiqueta: String, valor: String) {
     Row(
@@ -298,19 +332,7 @@ private fun FilaInfo(etiqueta: String, valor: String) {
 
 @Composable
 private fun FotoMascota(fotoUri: String?, nombre: String) {
-    val context = LocalContext.current
-    val bitmap = remember(fotoUri) {
-        fotoUri?.let { direccion ->
-            try {
-                context.contentResolver.openInputStream(Uri.parse(direccion))
-                    ?.use { archivo ->
-                        BitmapFactory.decodeStream(archivo)?.asImageBitmap()
-                    }
-            } catch (e: Exception) {
-                null
-            }
-        }
-    }
+    val bitmap = rememberFotoMascota(fotoUri, tamano = 160.dp)
 
     Box(
         modifier = Modifier

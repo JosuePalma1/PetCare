@@ -1,7 +1,5 @@
 package com.am.septimob.petcare.ui.mascotaform
 
-import android.graphics.BitmapFactory
-import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -31,6 +29,7 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.SelectableDates
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -38,14 +37,26 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.IconButton
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.semantics.Role
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.Calendar
+import com.am.septimob.petcare.ui.components.rememberFotoMascota
+import com.am.septimob.petcare.ui.components.MILIS_POR_DIA
+import com.am.septimob.petcare.ui.components.hoyEnDias
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -62,7 +73,18 @@ fun MascotaFormScreen(
     onCancelar: () -> Unit
 ) {
     var mostrarCalendario by remember { mutableStateOf(false) }
-    val datePickerState = rememberDatePickerState()
+
+    // Si el usuario ya escribió algo, salir (flecha, Cancelar o atrás del sistema) pide confirmación
+    var hayCambios by rememberSaveable { mutableStateOf(false) }
+    var mostrarDescartar by remember { mutableStateOf(false) }
+    fun <T> conCambio(accion: (T) -> Unit): (T) -> Unit = { valor ->
+        hayCambios = true
+        accion(valor)
+    }
+    val intentarSalir = { if (hayCambios) mostrarDescartar = true else onCancelar() }
+    BackHandler(enabled = hayCambios && !uiState.guardando) { mostrarDescartar = true }
+    // Una mascota no puede haber nacido en el futuro: esos días aparecen deshabilitados
+    val datePickerState = rememberDatePickerState(selectableDates = HastaHoy)
     var fechaConfirmadaMillis by remember { mutableStateOf<Long?>(null) }
     var fechaNacimiento by remember { mutableStateOf("") }
 
@@ -77,7 +99,7 @@ fun MascotaFormScreen(
                     uri,
                     android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
                 )
-                onFotoChange(uri.toString())
+                conCambio(onFotoChange)(uri.toString())
             } catch (e: SecurityException) {
                 // No actualizamos la foto si no podemos
                 // conservar el permiso de lectura.
@@ -85,19 +107,7 @@ fun MascotaFormScreen(
         }
     }
 
-    val fotoBitmap = remember(uiState.fotoUri) {
-        uiState.fotoUri?.let { direccion ->
-            try {
-                context.contentResolver.openInputStream(
-                    Uri.parse(direccion)
-                )?.use { archivo ->
-                    BitmapFactory.decodeStream(archivo)?.asImageBitmap()
-                }
-            } catch (e: Exception) {
-                null
-            }
-        }
-    }
+    val fotoBitmap = rememberFotoMascota(uiState.fotoUri, tamano = 120.dp)
 
     LaunchedEffect(uiState.fechaNacimiento) {
         fechaNacimiento = uiState.fechaNacimiento?.let { dias ->
@@ -119,15 +129,20 @@ fun MascotaFormScreen(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(16.dp)
+            .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
-        Text(
-            text = if (uiState.esEdicion) {
-                "Editar mascota"
-            } else {
-                "Registrar mascota"
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = intentarSalir, enabled = !uiState.guardando) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Volver"
+                )
             }
-        )
+            Text(
+                text = if (uiState.esEdicion) "Editar mascota" else "Registrar mascota",
+                style = MaterialTheme.typography.titleLarge
+            )
+        }
 
         if (uiState.cargando) {
             CircularProgressIndicator()
@@ -157,26 +172,29 @@ fun MascotaFormScreen(
 
         OutlinedTextField(
             value = uiState.nombre,
-            onValueChange = onNombreChange,
+            onValueChange = conCambio(onNombreChange),
             label = { Text("Nombre de la mascota") },
             singleLine = true,
-            enabled = !uiState.cargando && !uiState.guardando
+            enabled = !uiState.cargando && !uiState.guardando,
+            modifier = Modifier.fillMaxWidth()
         )
 
         OutlinedTextField(
             value = uiState.especie,
-            onValueChange = onEspecieChange,
+            onValueChange = conCambio(onEspecieChange),
             label = { Text("Especie") },
             singleLine = true,
-            enabled = !uiState.cargando && !uiState.guardando
+            enabled = !uiState.cargando && !uiState.guardando,
+            modifier = Modifier.fillMaxWidth()
         )
 
         OutlinedTextField(
             value = uiState.raza,
-            onValueChange = onRazaChange,
+            onValueChange = conCambio(onRazaChange),
             label = { Text("Raza") },
             singleLine = true,
-            enabled = !uiState.cargando && !uiState.guardando
+            enabled = !uiState.cargando && !uiState.guardando,
+            modifier = Modifier.fillMaxWidth()
         )
 
         Button(
@@ -194,31 +212,40 @@ fun MascotaFormScreen(
 
         Text(text = "Sexo")
 
-        Row {
-            RadioButton(
-                selected = uiState.sexo == "Macho",
-                onClick = { onSexoChange("Macho") },
-                enabled = !uiState.cargando && !uiState.guardando
-            )
-            Text(text = "Macho")
-
-            RadioButton(
-                selected = uiState.sexo == "Hembra",
-                onClick = { onSexoChange("Hembra") },
-                enabled = !uiState.cargando && !uiState.guardando
-            )
-            Text(text = "Hembra")
+        Row(modifier = Modifier.selectableGroup()) {
+            listOf("Macho", "Hembra").forEach { opcion ->
+                // Toda la fila (círculo + texto) es tocable, no solo el círculo
+                Row(
+                    modifier = Modifier
+                        .selectable(
+                            selected = uiState.sexo == opcion,
+                            onClick = { conCambio(onSexoChange)(opcion) },
+                            enabled = !uiState.cargando && !uiState.guardando,
+                            role = Role.RadioButton
+                        )
+                        .padding(end = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    RadioButton(
+                        selected = uiState.sexo == opcion,
+                        onClick = null,
+                        enabled = !uiState.cargando && !uiState.guardando
+                    )
+                    Text(text = opcion, modifier = Modifier.padding(start = 8.dp))
+                }
+            }
         }
 
         OutlinedTextField(
             value = uiState.peso,
-            onValueChange = onPesoChange,
+            onValueChange = conCambio(onPesoChange),
             label = { Text("Peso (kg)") },
             singleLine = true,
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Decimal
             ),
-            enabled = !uiState.cargando && !uiState.guardando
+            enabled = !uiState.cargando && !uiState.guardando,
+            modifier = Modifier.fillMaxWidth()
         )
 
         uiState.error?.let { mensaje ->
@@ -259,12 +286,35 @@ fun MascotaFormScreen(
         Spacer(modifier = Modifier.height(8.dp))
 
         OutlinedButton(
-            onClick = onCancelar,
+            onClick = intentarSalir,
             modifier = Modifier.fillMaxWidth(),
             enabled = !uiState.guardando
         ) {
             Text("Cancelar")
         }
+    }
+
+    if (mostrarDescartar) {
+        AlertDialog(
+            onDismissRequest = { mostrarDescartar = false },
+            title = { Text("¿Descartar cambios?") },
+            text = { Text("Se perderá lo que escribiste en el formulario.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        mostrarDescartar = false
+                        onCancelar()
+                    }
+                ) {
+                    Text("Descartar", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { mostrarDescartar = false }) {
+                    Text("Seguir editando")
+                }
+            }
+        )
     }
 
     if (mostrarCalendario) {
@@ -282,7 +332,7 @@ fun MascotaFormScreen(
                                 milisegundos,
                                 86_400_000L
                             )
-                            onFechaNacimientoChange(diasDesde1970)
+                            conCambio(onFechaNacimientoChange)(diasDesde1970)
 
                             val formato = SimpleDateFormat(
                                 "dd/MM/yyyy",
@@ -314,4 +364,12 @@ fun MascotaFormScreen(
             )
         }
     }
+}
+
+private object HastaHoy : SelectableDates {
+    override fun isSelectableDate(utcTimeMillis: Long): Boolean =
+        Math.floorDiv(utcTimeMillis, MILIS_POR_DIA) <= hoyEnDias()
+
+    override fun isSelectableYear(year: Int): Boolean =
+        year <= Calendar.getInstance().get(Calendar.YEAR)
 }

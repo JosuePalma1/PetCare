@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.am.septimob.petcare.data.repository.CuidadoRepository
 import com.am.septimob.petcare.data.repository.MascotaRepository
+import com.am.septimob.petcare.domain.usecase.ObtenerCantidadMascotasUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -19,14 +20,16 @@ import kotlinx.coroutines.flow.stateIn
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     mascotaRepository: MascotaRepository,
-    cuidadoRepository: CuidadoRepository
+    cuidadoRepository: CuidadoRepository,
+    obtenerCantidadMascotas: ObtenerCantidadMascotasUseCase
 ) : ViewModel() {
 
     val uiState: StateFlow<HomeUiState> = combine(
         mascotaRepository.obtenerMascotas(),
-        cuidadoRepository.obtenerTiposCuidado()
-    ) { mascotas, tipos -> mascotas to tipos }
-        .flatMapLatest { (mascotas, tipos) ->
+        cuidadoRepository.obtenerTiposCuidado(),
+        obtenerCantidadMascotas()
+    ) { mascotas, tipos, totalMascotas -> Triple(mascotas, tipos, totalMascotas) }
+        .flatMapLatest { (mascotas, tipos, totalMascotas) ->
             if (mascotas.isEmpty()) {
                 flowOf<HomeUiState>(
                     HomeUiState.Success(
@@ -60,7 +63,7 @@ class HomeViewModel @Inject constructor(
                         .take(2)
 
                     HomeUiState.Success(
-                        totalMascotas = mascotas.size,
+                        totalMascotas = totalMascotas,
                         totalCuidados = cuidados.size,
                         cuidadosRecientes = recientes
                     ) as HomeUiState

@@ -8,6 +8,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 @Composable
 fun HomeRoute(
     onVerMascotasClick: () -> Unit,
+    onRegistrarMascotaClick: () -> Unit,
     isExpanded: Boolean,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
@@ -16,6 +17,7 @@ fun HomeRoute(
     HomeScreen(
         uiState = uiState,
         onVerMascotasClick = onVerMascotasClick,
+        onRegistrarMascotaClick = onRegistrarMascotaClick,
         isExpanded = isExpanded
     )
 }

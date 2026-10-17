@@ -7,7 +7,9 @@ import com.am.septimob.petcare.data.repository.MascotaRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import androidx.lifecycle.viewModelScope
-import com.am.septimob.petcare.domain.model.Mascota
+import com.am.septimob.petcare.domain.usecase.FormularioMascota
+import com.am.septimob.petcare.domain.usecase.GuardarMascotaUseCase
+import com.am.septimob.petcare.domain.usecase.ResultadoGuardado
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.channels.Channel
@@ -15,13 +17,15 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.first
 import androidx.navigation.toRoute
 import com.am.septimob.petcare.ui.navigation.PetCareRoute
+import com.am.septimob.petcare.ui.components.hoyEnDias
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
 @HiltViewModel
 class MascotaFormViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
-    private val repository: MascotaRepository
+    private val repository: MascotaRepository,
+    private val guardarMascotaUseCase: GuardarMascotaUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MascotaFormUiState())
@@ -120,78 +124,40 @@ class MascotaFormViewModel @Inject constructor(
     }
 
 
-    private fun validarFormulario(): Boolean {
-        val estado = _uiState.value
-
-        if (estado.nombre.isBlank()) {
-            _uiState.value = estado.copy(
-                error = "Debes ingresar el nombre de la mascota"
-            )
-            return false
-        }
-
-        if (estado.especie.isBlank()) {
-            _uiState.value = estado.copy(
-                error = "Debes seleccionar una especie"
-            )
-            return false
-        }
-
-        if (estado.peso.isNotBlank()) {
-            val peso = estado.peso.toDoubleOrNull()
-
-            if (peso == null || !peso.isFinite() || peso <= 0) {
-                _uiState.value = estado.copy(
-                    error = "Ingresa un peso válido mayor que cero"
-                )
-                return false
-            }
-        }
-
-        return true
-    }
-
-
     fun guardarMascota() {
-        if (
-            _uiState.value.guardando ||
-            _uiState.value.cargando ||
-            _uiState.value.errorCarga
-        ) return
-
-        if (!validarFormulario()) return
-
         val estado = _uiState.value
+        if (estado.guardando || estado.cargando || estado.errorCarga) return
 
-        _uiState.value = estado.copy(
-            guardando = true,
-            error = null
-        )
+        _uiState.value = estado.copy(guardando = true, error = null)
 
         viewModelScope.launch {
             try {
-                val mascota = Mascota(
-                    id = estado.id ?: 0L,
-                    nombre = estado.nombre.trim(),
-                    especie = estado.especie.trim(),
-                    raza = estado.raza.trim(),
-                    fechaNacimiento = estado.fechaNacimiento,
-                    sexo = estado.sexo,
-                    pesoKg = estado.peso.toDoubleOrNull(),
-                    fotoUri = estado.fotoUri
+                // La validación y el guardado viven en el caso de uso (capa de dominio)
+                val resultado = guardarMascotaUseCase(
+                    FormularioMascota(
+                        id = estado.id,
+                        nombre = estado.nombre,
+                        especie = estado.especie,
+                        raza = estado.raza,
+                        fechaNacimiento = estado.fechaNacimiento,
+                        sexo = estado.sexo,
+                        peso = estado.peso,
+                        fotoUri = estado.fotoUri
+                    ),
+                    hoyEnDias = hoyEnDias()
                 )
 
-                if (estado.esEdicion) {
-                    repository.actualizarMascota(mascota)
-                } else {
-                    repository.insertarMascota(mascota)
+                when (resultado) {
+                    is ResultadoGuardado.Invalida -> _uiState.value = _uiState.value.copy(
+                        guardando = false,
+                        error = resultado.mensaje
+                    )
+
+                    ResultadoGuardado.Guardada -> {
+                        _uiState.value = _uiState.value.copy(guardando = false)
+                        _guardadoExitoso.send(Unit)
+                    }
                 }
-
-                _uiState.value = _uiState.value.copy(
-                    guardando = false
-                )
-                _guardadoExitoso.send(Unit)
-
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
@@ -202,6 +168,4 @@ class MascotaFormViewModel @Inject constructor(
             }
         }
     }
-
-
 }
