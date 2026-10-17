@@ -4,6 +4,10 @@ package com.am.septimob.petcare.ui.mascotas
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.am.septimob.petcare.data.repository.MascotaRepository
+import com.am.septimob.petcare.data.repository.PreferenciasRepository
+import com.am.septimob.petcare.domain.model.Mascota
+import com.am.septimob.petcare.domain.model.OrdenMascotas
+import java.text.Collator
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,7 +18,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class MascotasViewModel @Inject constructor(
-    private val repository: MascotaRepository
+    private val repository: MascotaRepository,
+    private val preferenciasRepository: PreferenciasRepository
 ) : ViewModel() {
 
     private val _uiState =
@@ -33,15 +38,17 @@ class MascotasViewModel @Inject constructor(
             try {
                 combine(
                     repository.obtenerMascotas(),
-                    busquedaActual
-                ) { mascotas, busqueda ->
+                    busquedaActual,
+                    preferenciasRepository.preferencias
+                ) { mascotas, busqueda, preferencias ->
+                    // Sin trim, buscar " " no coincidía con nada y la pantalla lo trataba como lista vacía
+                    val texto = busqueda.trim()
                     MascotasUiState.Success(
-                        mascotas = mascotas.filter { mascota ->
-                            mascota.nombre.contains(
-                                busqueda,
-                                ignoreCase = true
-                            )
-                        },
+                        mascotas = mascotas
+                            .filter { mascota ->
+                                mascota.nombre.contains(texto, ignoreCase = true)
+                            }
+                            .ordenadas(preferencias.ordenMascotas),
                         busqueda = busqueda
                     )
                 }.collect { estado ->
@@ -60,4 +67,11 @@ class MascotasViewModel @Inject constructor(
     fun actualizarBusqueda(texto: String) {
         busquedaActual.value = texto
     }
+}
+
+// Collator: "abby" va antes que "Max" y "Ámbar" junto a "Ana" (el ORDER BY de SQLite distingue mayúsculas)
+private fun List<Mascota>.ordenadas(orden: OrdenMascotas): List<Mascota> = when (orden) {
+    OrdenMascotas.POR_NOMBRE -> sortedWith(compareBy(Collator.getInstance()) { it.nombre })
+    // El id es autoincremental: el mayor es el último registrado
+    OrdenMascotas.MAS_RECIENTE -> sortedByDescending { it.id }
 }

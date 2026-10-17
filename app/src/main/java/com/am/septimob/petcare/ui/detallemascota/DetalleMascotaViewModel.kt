@@ -6,8 +6,10 @@ import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
 import com.am.septimob.petcare.data.repository.CuidadoRepository
 import com.am.septimob.petcare.data.repository.MascotaRepository
+import com.am.septimob.petcare.data.repository.PreferenciasRepository
 import com.am.septimob.petcare.domain.model.Cuidado
 import com.am.septimob.petcare.domain.model.Mascota
+import com.am.septimob.petcare.domain.model.OrdenHistorial
 import com.am.septimob.petcare.domain.model.TipoCuidado
 import com.am.septimob.petcare.ui.navigation.PetCareRoute
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -30,7 +32,8 @@ sealed interface DetalleMascotaEvento {
 class DetalleMascotaViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val mascotaRepository: MascotaRepository,
-    private val cuidadoRepository: CuidadoRepository
+    private val cuidadoRepository: CuidadoRepository,
+    private val preferenciasRepository: PreferenciasRepository
 ) : ViewModel() {
 
     private val mascotaId: Long =
@@ -54,9 +57,10 @@ class DetalleMascotaViewModel @Inject constructor(
                 combine(
                     mascotaRepository.obtenerMascotaPorId(mascotaId),
                     cuidadoRepository.obtenerCuidadosDeMascota(mascotaId),
-                    cuidadoRepository.obtenerTiposCuidado()
-                ) { mascota, cuidados, tipos ->
-                    armarEstado(mascota, cuidados, tipos)
+                    cuidadoRepository.obtenerTiposCuidado(),
+                    preferenciasRepository.preferencias
+                ) { mascota, cuidados, tipos, preferencias ->
+                    armarEstado(mascota, cuidados, tipos, preferencias.ordenHistorial)
                 }.collect { estado ->
                     _uiState.value = estado
                 }
@@ -73,7 +77,8 @@ class DetalleMascotaViewModel @Inject constructor(
     private fun armarEstado(
         mascota: Mascota?,
         cuidados: List<Cuidado>,
-        tipos: List<TipoCuidado>
+        tipos: List<TipoCuidado>,
+        orden: OrdenHistorial
     ): DetalleMascotaUiState {
         if (mascota == null) {
             return DetalleMascotaUiState.Error("Mascota no encontrada")
@@ -81,7 +86,7 @@ class DetalleMascotaViewModel @Inject constructor(
         val nombresTipo = tipos.associate { it.id to it.nombre }
         return DetalleMascotaUiState.Success(
             mascota = mascota,
-            cuidados = cuidados.map { cuidado ->
+            cuidados = cuidados.ordenados(orden).map { cuidado ->
                 CuidadoItem(
                     id = cuidado.id,
                     tipoNombre = nombresTipo[cuidado.tipoCuidadoId] ?: "Cuidado",
@@ -108,5 +113,14 @@ class DetalleMascotaViewModel @Inject constructor(
                 )
             }
         }
+    }
+}
+
+// Misma fecha: desempata el id para que el orden sea estable
+private fun List<Cuidado>.ordenados(orden: OrdenHistorial): List<Cuidado> {
+    val masAntiguoPrimero = compareBy<Cuidado>({ it.fecha }, { it.id })
+    return when (orden) {
+        OrdenHistorial.RECIENTES_PRIMERO -> sortedWith(masAntiguoPrimero.reversed())
+        OrdenHistorial.ANTIGUOS_PRIMERO -> sortedWith(masAntiguoPrimero)
     }
 }

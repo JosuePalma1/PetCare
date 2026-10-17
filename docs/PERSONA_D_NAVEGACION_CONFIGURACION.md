@@ -104,9 +104,9 @@ Probado en el emulador `Medium_Phone_API_37.0`. Los datos se verificaron copiand
 ## 8. Observaciones para el equipo
 - **Persona A:** las rutas `Splash` y `Home` ya existen. Para el Splash, al terminar navega a `PetCareRoute.Home` con `popUpTo<PetCareRoute.Splash> { inclusive = true }` (así está en `PetCareApp.kt`).
 - **Persona B:**
-  - En el formulario, al tocar el texto "Macho"/"Hembra" no se selecciona; solo funciona el círculo. Sugerencia: hacer la fila entera `selectable` (como en Configuración).
-  - En la lista, si la raza está vacía la tarjeta muestra "Gato · " con el separador colgando.
-- **Preferencias:** se guardan y leen correctamente (RF10), pero todavía **no se aplican** al resto de la app (tema global, orden de las listas). El plan lo deja como mejora opcional.
+  - ~~Al tocar el texto "Macho"/"Hembra" no se selecciona~~ → corregido: la fila entera es `selectable`.
+  - ~~"Gato · " con el separador colgando~~ → corregido en la lista y en el detalle.
+- **Preferencias:** se guardan, se leen (RF10) **y se aplican**: el tema en toda la app (incluidos los iconos de la barra de estado), el orden de Mis mascotas (`MascotasViewModel`, por nombre con `Collator` o por más reciente) y el del historial (`DetalleMascotaViewModel`).
 - **Room:** al compilar se genera `app/schemas/.../PetCareDatabase/2.json` (por `exportSchema = true`). Falta decidir si se versiona; lo normal es subirlo.
 - **Emulador:** si aparece el tutorial de lápiz de Gboard y no deja escribir: `adb shell settings put secure stylus_handwriting_enabled 0`.
 
