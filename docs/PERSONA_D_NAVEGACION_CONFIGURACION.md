@@ -1,7 +1,7 @@
 # PetCare — Navegación, Configuración e Inyección de dependencias (Persona D)
 
 ## 1. Información general
-- **Responsable:** Persona D
+- **Responsable:** Dumar Abdul Matamoros Pluas (Persona D)
 - **Rama de trabajo:** `feature/persona-d-navegacion-configuracion` (sale de `tarea-c-cuidados`, que ya incluye la rama de Persona B)
 - **Módulo:** Hilt, navegación entre pantallas y pantalla de Configuración (RF10)
 

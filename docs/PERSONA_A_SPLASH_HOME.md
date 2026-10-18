@@ -1,5 +1,7 @@
 # Persona A — Splash, inicio y diseño visual
 
+**Responsable:** Marcelo Matias Nieto Medina (Persona A)
+
 ## Cambios realizados
 
 - Actualicé el Splash con la identidad visual de PetCare, el mensaje de almacenamiento local y un indicador de carga. Tras pintar el primer frame se mantiene 800 ms y luego abre Inicio sin dejar el Splash en la pila.

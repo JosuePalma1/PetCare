@@ -1,5 +1,14 @@
 # Reparto de tareas — PetCare: la app completa (MVVM + Room + Hilt + Navigation Compose + DataStore)
 
+## Equipo
+
+| Persona | Integrante | Módulo |
+|---|---|---|
+| A | Marcelo Matias Nieto Medina | Splash, Inicio, diseño visual y extras |
+| B | Josue Fernando Palma Zambrano | Mascotas: lista, búsqueda y formulario |
+| C | Yimmi Leonel Barberan Moreira | Cuidados y detalle de mascota |
+| D | Dumar Abdul Matamoros Pluas | Navegación, Configuración e inyección de dependencias (Hilt) |
+
 ## Contexto
 
 Esta versión del plan deja de tratarse como "una entrega parcial" y pasa a cubrir **la app completa** que piden los dos documentos del profesor (Trabajo Grupal 1 — los 9 wireframes — y Trabajo Autónomo Etapa 2 — la arquitectura técnica), más las correcciones de la clase sobre Hilt/NavHost ya aplicadas en la versión anterior.

@@ -1,7 +1,7 @@
 # PetCare — Módulo de Mascotas (Persona B)
 
 ## 1. Información general
-- **Responsable:** Persona B
+- **Responsable:** Josue Fernando Palma Zambrano (Persona B)
 - **Rama de trabajo:** `feature/persona-b-mascotas-crud`
 - **Módulo:** Gestión de mascotas
 
